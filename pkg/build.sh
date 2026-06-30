@@ -78,7 +78,8 @@ BASE="$(basename "$IPK")"
 gzip -9 -c "$FEED/Packages" > "$FEED/Packages.gz"
 
 # Copy the landing-page screenshots into the feed (Pages publishes only feed/).
-cp "$HERE/docs/screenshots/add-source.png" "$HERE/docs/screenshots/admin-page.png" "$FEED/" 2>/dev/null || true
+cp "$HERE/docs/screenshots/add-source.png" "$HERE/docs/screenshots/install-step.png" \
+   "$HERE/docs/screenshots/admin-page.png" "$FEED/" 2>/dev/null || true
 
 # Landing page so the feed's root URL isn't a bare 404 for humans (opkg only needs
 # Packages.gz, but visitors and the user verifying the source URL see this instead).
@@ -108,8 +109,9 @@ conference, cafe, anywhere - from a simple page, no admin password, no advanced 
   <li>URL: <code>https://digitalcybersoft.github.io/glinet-employeewifi</code></li>
 </ul>
 <img class="shot source" src="add-source.png" alt="Add Custom Software Source dialog" />
-<p>Then refresh and install <b>Employee WiFi</b>. It appears in the admin under
-<b>Applications &rarr; Employee WiFi</b>:</p>
+<p>Refresh the list, find <code>gl-employee-wifi</code>, and click <b>install</b>:</p>
+<img class="shot" src="install-step.png" alt="gl-employee-wifi in the Plug-ins list with an install button" />
+<p>It then appears in the admin under <b>Applications &rarr; Employee WiFi</b>:</p>
 <img class="shot" src="admin-page.png" alt="Employee WiFi admin page" />
 
 <p class="muted">Feed files: <a href="Packages">Packages</a> &middot;

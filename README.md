@@ -38,7 +38,11 @@ It's a normal plug-in, served from this repo's GitHub Pages feed. On the router,
   <img src="docs/screenshots/add-source.png" width="72%" alt="Add Custom Software Source dialog (Plug-ins -> Manage Sources)" />
 </p>
 
-Refresh and install **Employee WiFi** from the list.
+Refresh the list, find `gl-employee-wifi`, and click **install**:
+
+<p align="center">
+  <img src="docs/screenshots/install-step.png" width="88%" alt="gl-employee-wifi in the Plug-ins list with an install button" />
+</p>
 
 That's it. (Same thing from SSH if you prefer:
 `echo 'src/gz empwifi https://digitalcybersoft.github.io/glinet-employeewifi' >> /etc/opkg/customfeeds.conf && opkg update && opkg install gl-employee-wifi`.)
