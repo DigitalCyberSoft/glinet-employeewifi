@@ -75,4 +75,24 @@ BASE="$(basename "$IPK")"
 	echo ""
 } > "$FEED/Packages"
 gzip -9 -c "$FEED/Packages" > "$FEED/Packages.gz"
-echo "feed: $FEED/Packages(.gz)"
+
+# Landing page so the feed's root URL isn't a bare 404 for humans (opkg only needs
+# Packages.gz, but visitors and the user verifying the source URL see this instead).
+cat > "$FEED/index.html" <<HTML
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Employee WiFi - opkg feed</title>
+<style>body{font:15px/1.6 -apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:640px;margin:48px auto;padding:0 16px;color:#222}code{background:#f2f2f7;padding:2px 6px;border-radius:4px}a{color:#5272f7}</style>
+</head><body>
+<h1>Employee WiFi - opkg feed</h1>
+<p>This is the package feed for the <a href="https://github.com/DigitalCyberSoft/glinet-employeewifi">Employee WiFi</a> GL.iNet plugin. It is meant to be used by your router, not browsed.</p>
+<h2>Install on your GL.iNet router (firmware 4.x)</h2>
+<p>In the router's <b>Plug-ins</b> page, add a software source:</p>
+<ul><li>Name: <code>empwifi</code></li>
+<li>URL: <code>https://digitalcybersoft.github.io/glinet-employeewifi</code></li></ul>
+<p>Then refresh and install <b>Employee WiFi</b>.</p>
+<p>Feed files: <a href="Packages">Packages</a> &middot; <a href="Packages.gz">Packages.gz</a> &middot; <a href="${PKG}_${VER}_all.ipk">${PKG}_${VER}_all.ipk</a></p>
+</body></html>
+HTML
+echo "feed: $FEED/Packages(.gz) + index.html"
