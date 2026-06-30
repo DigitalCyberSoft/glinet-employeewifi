@@ -1,0 +1,20 @@
+{
+    "empwifi": {
+        "title": "Employee WiFi",
+        "intro": "Let staff connect this router to hotel WiFi from a simple page, without the admin password or advanced settings.",
+        "no_password": "No password required",
+        "no_password_desc": "Allow anyone on this router's network to open the employee page without a password.",
+        "password": "Employee page password",
+        "password_ph": "Set a password",
+        "password_keep": "Leave blank to keep current password",
+        "password_set_desc": "A password is set. Enter a new one to change it.",
+        "password_unset_desc": "No password set yet. Set one so only staff can use the page.",
+        "camouflage": "Camouflage (MAC disguise)",
+        "camouflage_desc": "Hide this router behind a disguised MAC address when joining hotel WiFi.",
+        "loading": "Loading...",
+        "saved": "Saved",
+        "save_failed": "Save failed",
+        "load_failed": "Failed to load settings",
+        "err_need_password": "Set a password, or enable \"No password required\"."
+    }
+}

@@ -1,0 +1,42 @@
+name: Build and publish opkg feed
+
+# Builds the .ipk (no compiler: tar + gzip only) and publishes the opkg feed to GitHub
+# Pages. The Pages URL is the "source" you add in the router's Plug-ins page:
+#   src/gz empwifi https://<user>.github.io/<repo>
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# allow only one concurrent deployment
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build .ipk and opkg feed index
+        run: ./pkg/build.sh
+      - name: Upload feed as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: feed
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

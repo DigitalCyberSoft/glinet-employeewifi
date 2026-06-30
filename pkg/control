@@ -1,0 +1,11 @@
+Package: gl-sdk4-ui-empwifiview
+Version: 1.0.0
+Architecture: all
+Maintainer: Employee WiFi Plugin <noreply@example.com>
+Section: gl
+Priority: optional
+Depends: gl-oui-rpc
+Description: Employee hotel-WiFi page for GL.iNet firmware 4.x.
+ Adds a native admin page (set an employee password / no-password / camouflage) and a
+ public /wifi page where staff scan and join hotel WiFi as the router's uplink, without
+ admin credentials or advanced settings. Architecture-independent (Lua + JS + JSON).

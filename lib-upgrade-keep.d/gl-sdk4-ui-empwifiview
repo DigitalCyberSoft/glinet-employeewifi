@@ -1,0 +1,10 @@
+/etc/config/empwifi
+/etc/opkg/customfeeds.conf
+/etc/nginx/gl-conf.d/empwifi.conf
+/usr/lib/oui-httpd/rpc/empwifi
+/usr/share/gl-validator.d/empwifi.lua
+/usr/share/oui/menu.d/empwifiview.json
+/www/views/gl-sdk4-ui-empwifiview.common.js.gz
+/www/i18n/gl-sdk4-ui-empwifiview.*.json
+/usr/share/empwifi/
+/lib/upgrade/keep.d/gl-sdk4-ui-empwifiview

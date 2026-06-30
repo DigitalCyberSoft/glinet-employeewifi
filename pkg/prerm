@@ -1,0 +1,14 @@
+#!/bin/sh
+[ -n "${IPKG_INSTROOT}" ] && exit 0
+
+# Remove the no-auth-methods section(s) we added, then reload nginx so the employee
+# methods stop being publicly callable. Re-query each pass: indices shift on delete.
+while uci -q show oui-httpd | grep -q "\.object='empwifi'"; do
+	sec="$(uci -q show oui-httpd | grep "\.object='empwifi'" | head -1 | cut -d. -f2 | cut -d= -f1)"
+	[ -n "$sec" ] || break
+	uci -q delete oui-httpd."$sec" || break
+done
+uci -q commit oui-httpd
+nginx -s reload 2>/dev/null || true
+
+exit 0

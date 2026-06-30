@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Employee WiFi</title>
+<!-- base.css provides GL's --gl-* palette; below we recreate GL's semantic theme
+     variables (default + dark) exactly as the admin UI maps them, so this standalone
+     page matches GL.iNet's look and adapts to light/dark. -->
+<link rel="stylesheet" href="/theme/base.css" />
+<style>
+  :root {
+    --background-main: var(--gl-gray-100, #ebebf0);
+    --background-card: var(--gl-white, #fff);
+    --background-content: var(--gl-gray-100, #ebebf0);
+    --divider: var(--gl-gray-100, #ebebf0);
+    --border: var(--gl-gray-200, #d2d2d6);
+    --text-regular: var(--gl-purple-800, #141427);
+    --text-title: var(--gl-purple-700, #1f1f3d);
+    --text-weak: var(--gl-purple-500, #333366);
+    --text-hint: var(--gl-gray-400, #a0a0a3);
+    --primary: var(--gl-blue-500, #5272f7);
+    --primary-hover: var(--gl-blue-700, #425bc6);
+    --primary-background: var(--gl-blue-50, #eef1fe);
+    --error: var(--gl-red-500, #e04c7e);
+    --error-background: var(--gl-red-50, #fcedf2);
+    --success: var(--gl-green-600, #00ad9d);
+    --success-background: var(--gl-green-50, #e7f9f8);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background-main: var(--gl-black, #000);
+      --background-card: var(--gl-purple-800, #141427);
+      --background-content: var(--gl-gray-900, #222223);
+      --divider: var(--gl-gray-800, #3c3c3d);
+      --border: var(--gl-gray-500, #87878a);
+      --text-regular: var(--gl-gray-300, #b9b9bd);
+      --text-title: var(--gl-gray-200, #d2d2d6);
+      --text-weak: var(--gl-purple-400, #9195aa);
+      --text-hint: var(--gl-gray-700, #555557);
+      --primary: var(--gl-blue-600, #4665de);
+      --primary-hover: var(--gl-blue-700, #425bc6);
+      --primary-background: var(--gl-blue-900, #212e63);
+      --error: var(--gl-red-600, #c94471);
+      --error-background: var(--gl-red-900, #5a1e32);
+      --success: var(--gl-green-500, #00c8b5);
+      --success-background: var(--gl-green-900, #00645b);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--background-main); color: var(--text-regular);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 24px 16px 48px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin: 4px 0 20px; }
+  .brand .dot { width: 30px; height: 30px; border-radius: 8px; background: var(--primary);
+    display: flex; align-items: center; justify-content: center; }
+  .brand h1 { font-size: 18px; font-weight: 600; margin: 0; color: var(--text-title); }
+  .card { background: var(--background-card); border-radius: 10px; padding: 20px 22px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; font-weight: 600; margin: 0 0 4px; color: var(--text-title); }
+  .muted { color: var(--text-weak); font-size: 13px; line-height: 1.5; margin: 0; }
+  label { display: block; font-size: 13px; color: var(--text-weak); margin: 16px 0 6px; }
+  input[type=password], input[type=text] {
+    width: 100%; height: 40px; padding: 0 12px; font-size: 14px; border: 1px solid var(--border);
+    border-radius: 4px; outline: none; background: var(--background-card); color: var(--text-regular);
+  }
+  input::placeholder { color: var(--text-hint); }
+  input:focus { border-color: var(--primary); }
+  button.primary {
+    width: 100%; margin-top: 18px; height: 40px; font-size: 14px; font-weight: 600;
+    color: #fff; background: var(--primary); border: none; border-radius: 4px; cursor: pointer;
+  }
+  button.primary:hover { background: var(--primary-hover); }
+  button.primary:disabled { opacity: .55; cursor: default; }
+  button.ghost {
+    height: 32px; padding: 0 14px; font-size: 13px; color: var(--primary);
+    background: transparent; border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+  }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  ul.aps { list-style: none; margin: 6px 0 0; padding: 0; }
+  li.ap { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 12px 6px;
+    border-bottom: 1px solid var(--divider); cursor: pointer; }
+  li.ap:hover { background: var(--background-content); }
+  li.ap .name { flex: 1; font-size: 14px; color: var(--text-regular);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icons { display: flex; align-items: center; gap: 6px; color: var(--text-weak); }
+  .banner { padding: 11px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+  .banner.ok { background: var(--success-background); color: var(--success); }
+  .banner.err { background: var(--error-background); color: var(--error); }
+  .banner.info { background: var(--primary-background); color: var(--primary); }
+  .hide { display: none !important; }
+  .center { text-align: center; }
+  .spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--divider);
+    border-top-color: var(--primary); border-radius: 50%; animation: sp .8s linear infinite; vertical-align: -3px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center;
+    justify-content: center; padding: 20px; }
+  .modal { background: var(--background-card); border-radius: 10px; padding: 22px; width: 100%; max-width: 400px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <span class="dot">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+        <path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.1" fill="#fff" stroke="none"/>
+      </svg>
+    </span>
+    <h1>Employee WiFi</h1>
+  </div>
+
+  <div id="banner" class="banner hide"></div>
+
+  <!-- Login -->
+  <div id="login" class="card hide">
+    <h2>Enter password</h2>
+    <p class="muted">Ask your administrator for the employee WiFi password.</p>
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="off" />
+    <button class="primary" id="loginBtn">Continue</button>
+  </div>
+
+  <!-- Networks -->
+  <div id="main" class="card hide">
+    <div class="row-between">
+      <div><h2 style="margin:0">Hotel networks</h2><p class="muted" id="statusLine">Choose a network to connect.</p></div>
+      <button class="ghost" id="scanBtn">Rescan</button>
+    </div>
+    <div id="scanState" class="muted center hide" style="padding:20px 0"><span class="spin"></span> Scanning&hellip;</div>
+    <ul class="aps" id="aps"></ul>
+  </div>
+</div>
+
+<!-- Password modal for a chosen network -->
+<div id="modal" class="modal-bg hide">
+  <div class="modal">
+    <h2 id="mTitle" style="margin:0 0 4px">Connect</h2>
+    <p class="muted" id="mName"></p>
+    <div id="mKeyWrap">
+      <label for="mKey">WiFi password</label>
+      <input id="mKey" type="password" autocomplete="off" />
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="ghost" style="flex:1" id="mCancel">Cancel</button>
+      <button class="primary" style="flex:1;margin-top:0" id="mJoin">Join</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var token = sessionStorage.getItem("empwifi_token") || "";
+  var pending = null; // chosen AP awaiting password
+
+  function $(id) { return document.getElementById(id); }
+  function show(id, on) { $(id).classList.toggle("hide", !on); }
+
+  function banner(kind, msg) {
+    var b = $("banner");
+    if (!msg) { b.classList.add("hide"); return; }
+    b.className = "banner " + kind;
+    b.textContent = msg;
+  }
+
+  function rpc(method, args) {
+    args = args || {};
+    return fetch("/rpc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method: "call",
+        params: ["", "empwifi", method, args] })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.error) {
+        var e = new Error((j.error && (j.error.err || j.error.message)) || "error");
+        e.code = j.error && j.error.err;
+        throw e;
+      }
+      return (j && j.result) || {};
+    });
+  }
+
+  // bars 0..4 from either RSSI dBm (<=0) or percentage (0..100)
+  function bars(sig) {
+    if (sig == null) return 2;
+    var pct = sig <= 0 ? Math.max(0, Math.min(100, 2 * (sig + 100))) : Math.max(0, Math.min(100, sig));
+    return Math.round(pct / 25);
+  }
+  function wifiSvg(n) {
+    var on = "var(--gl-gray-700,#555557)", off = "var(--gl-gray-200,#d2d2d6)";
+    function arc(d, lit) { return '<path d="' + d + '" fill="none" stroke="' + (lit ? on : off) + '" stroke-width="2" stroke-linecap="round"/>'; }
+    return '<svg width="22" height="22" viewBox="0 0 24 24">' +
+      arc("M3 9.5a14 14 0 0 1 18 0", n >= 4) +
+      arc("M6 13a9.5 9.5 0 0 1 12 0", n >= 3) +
+      arc("M8.7 16.2a5.5 5.5 0 0 1 6.6 0", n >= 2) +
+      '<circle cx="12" cy="19.3" r="1.2" fill="' + (n >= 1 ? on : off) + '"/></svg>';
+  }
+  function lockSvg() {
+    return '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3z"/></svg>';
+  }
+  function secured(ap) { return !!(ap && ap.secured); }
+
+  function gotoLogin(msg) {
+    show("login", true); show("main", false);
+    if (msg) banner("info", msg);
+    setTimeout(function () { $("pw").focus(); }, 50);
+  }
+  function gotoMain() {
+    show("login", false); show("main", true);
+    banner("");
+    refreshStatus();
+    scan();
+  }
+
+  function tryEnter(password) {
+    var args = password == null ? {} : { password: password };
+    return rpc("emp_login", args).then(function (res) {
+      token = res.token || "";
+      if (!token) throw new Error("no token");
+      sessionStorage.setItem("empwifi_token", token);
+      gotoMain();
+    });
+  }
+
+  function refreshStatus() {
+    rpc("emp_status", { token: token }).then(function (s) {
+      if (s && (s.connected || s.ssid)) {
+        $("statusLine").textContent = s.ssid ? ("Connected to " + s.ssid) : "Connected.";
+      } else {
+        $("statusLine").textContent = "Choose a network to connect.";
+      }
+    }).catch(function () {});
+  }
+
+  function scan() {
+    show("scanState", true);
+    $("aps").innerHTML = "";
+    rpc("emp_scan", { token: token }).then(function (res) {
+      show("scanState", false);
+      render(res.list || []);
+    }).catch(function (e) {
+      show("scanState", false);
+      if (e.code === "unauthorized") return needLogin();
+      banner("err", "Scan failed. Tap Rescan to try again.");
+    });
+  }
+
+  function render(list) {
+    list.sort(function (a, b) { return (b.signal || -999) - (a.signal || -999); });
+    var seen = {}, ul = $("aps");
+    ul.innerHTML = "";
+    list.forEach(function (ap) {
+      if (!ap.ssid || seen[ap.ssid]) return;
+      seen[ap.ssid] = 1;
+      var li = document.createElement("li");
+      li.className = "ap";
+      li.innerHTML =
+        '<span class="icons">' + wifiSvg(bars(ap.signal)) + '</span>' +
+        '<span class="name"></span>' +
+        '<span class="icons">' + (secured(ap) ? lockSvg() : "") + "</span>";
+      li.querySelector(".name").textContent = ap.ssid;
+      li.onclick = function () { choose(ap); };
+      ul.appendChild(li);
+    });
+    if (!ul.children.length) {
+      ul.innerHTML = '<li class="muted center" style="padding:18px 0;list-style:none">No networks found.</li>';
+    }
+  }
+
+  function choose(ap) {
+    pending = ap;
+    $("mName").textContent = ap.ssid;
+    $("mKey").value = "";
+    show("mKeyWrap", secured(ap));
+    show("modal", true);
+    if (secured(ap)) setTimeout(function () { $("mKey").focus(); }, 50);
+  }
+
+  function join() {
+    if (!pending) return;
+    var args = { token: token, ssid: pending.ssid };
+    if (secured(pending)) args.key = $("mKey").value;
+    $("mJoin").disabled = true;
+    rpc("emp_join", args).then(function () {
+      show("modal", false);
+      $("mJoin").disabled = false;
+      banner("ok", "Connecting to " + pending.ssid + "…");
+      pollStatus(pending.ssid, 0);
+    }).catch(function (e) {
+      $("mJoin").disabled = false;
+      if (e.code === "unauthorized") { show("modal", false); return needLogin(); }
+      banner("err", "Could not join " + pending.ssid + ". Check the password and try again.");
+      show("modal", false);
+    });
+  }
+
+  function pollStatus(ssid, n) {
+    if (n > 15) { refreshStatus(); return; }
+    rpc("emp_status", { token: token }).then(function (s) {
+      if (s && s.connected) {
+        banner("ok", "Connected to " + (s.ssid || ssid) + ".");
+        refreshStatus();
+      } else {
+        setTimeout(function () { pollStatus(ssid, n + 1); }, 2000);
+      }
+    }).catch(function () { setTimeout(function () { pollStatus(ssid, n + 1); }, 2000); });
+  }
+
+  function needLogin() {
+    token = ""; sessionStorage.removeItem("empwifi_token");
+    gotoLogin("Session expired. Please enter the password again.");
+  }
+
+  // wire up
+  $("loginBtn").onclick = function () {
+    banner("");
+    $("loginBtn").disabled = true;
+    tryEnter($("pw").value).catch(function (e) {
+      $("loginBtn").disabled = false;
+      if (e.code === "not_configured") banner("err", "Not set up yet. Ask your administrator to configure Employee WiFi.");
+      else if (e.code === "locked_out") banner("err", "Too many attempts. Please wait a few minutes and try again.");
+      else banner("err", "Wrong password.");
+    });
+  };
+  $("pw").addEventListener("keydown", function (e) { if (e.key === "Enter") $("loginBtn").click(); });
+  $("scanBtn").onclick = scan;
+  $("mCancel").onclick = function () { show("modal", false); };
+  $("mJoin").onclick = join;
+  $("mKey").addEventListener("keydown", function (e) { if (e.key === "Enter") join(); });
+
+  // boot: if we have a token try it; otherwise probe whether a password is required
+  function boot() {
+    if (token) {
+      rpc("emp_status", { token: token }).then(function () { gotoMain(); })
+        .catch(function () { probe(); });
+    } else { probe(); }
+  }
+  function probe() {
+    // emp_login with no password: succeeds when no-password mode is on, else tells us to prompt
+    tryEnter(null).catch(function (e) {
+      if (e.code === "not_configured") { show("login", false); show("main", false);
+        banner("info", "Employee WiFi is not set up yet. Ask your administrator to configure it."); }
+      else if (e.code === "locked_out") gotoLogin("Too many attempts. Please wait and try again.");
+      else gotoLogin();
+    });
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

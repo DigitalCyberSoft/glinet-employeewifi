@@ -1,0 +1,29 @@
+#!/bin/sh
+# Offline image build (opkg in a staging root): do nothing on-target work.
+[ -n "${IPKG_INSTROOT}" ] && exit 0
+
+fail() { echo "empwifi: $1" >&2; exit 1; }
+
+# 1. Require firmware-4.x oui layout + the repeater backend we wrap.
+[ -d /usr/share/oui/menu.d ]      || fail "not a firmware-4.x (oui) device; aborting"
+[ -d /usr/lib/oui-httpd/rpc ]     || fail "oui rpc directory missing; aborting"
+[ -e /usr/lib/oui-httpd/rpc/repeater ] || fail "repeater backend missing; this device cannot run Employee WiFi"
+
+# 2. Register the employee methods as no-auth (idempotent) so the public /wifi page can
+#    reach them without an admin session. The methods enforce the employee password inside Lua.
+if [ "$(uci -q show oui-httpd | grep -c "\.object='empwifi'")" = "0" ]; then
+	sec="$(uci add oui-httpd no-auth-methods)"
+	uci set oui-httpd."$sec".object='empwifi'
+	for m in emp_login emp_scan emp_join emp_status emp_list; do
+		uci add_list oui-httpd."$sec".method="$m"
+	done
+	uci commit oui-httpd
+fi
+
+# 3. Reload nginx so fresh workers pick up the new no-auth methods (the no_auth_methods
+#    dict is a per-worker Lua upvalue) and the /wifi location. Use `nginx -s reload`
+#    (HUP -> graceful fresh workers); the init script's `reload` is a no-op on this
+#    firmware, and a full restart would drop the admin's session mid-install.
+nginx -s reload 2>/dev/null || /etc/init.d/nginx restart 2>/dev/null || true
+
+exit 0
