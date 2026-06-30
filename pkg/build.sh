@@ -76,23 +76,53 @@ BASE="$(basename "$IPK")"
 } > "$FEED/Packages"
 gzip -9 -c "$FEED/Packages" > "$FEED/Packages.gz"
 
+# Copy screenshots into the feed so the GitHub Pages landing page can show them
+# (Pages publishes only the feed/ directory).
+if [ -d "$HERE/docs/screenshots" ]; then
+	cp "$HERE/docs/screenshots/"*.png "$FEED/" 2>/dev/null || true
+fi
+
 # Landing page so the feed's root URL isn't a bare 404 for humans (opkg only needs
 # Packages.gz, but visitors and the user verifying the source URL see this instead).
 cat > "$FEED/index.html" <<HTML
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Employee WiFi - opkg feed</title>
-<style>body{font:15px/1.6 -apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:640px;margin:48px auto;padding:0 16px;color:#222}code{background:#f2f2f7;padding:2px 6px;border-radius:4px}a{color:#5272f7}</style>
+<title>Employee WiFi - GL.iNet plugin</title>
+<style>
+  body{font:15px/1.65 -apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:780px;margin:0 auto;padding:40px 16px 64px;color:#222223}
+  h1{margin:.2em 0}h2{margin-top:1.8em}code{background:#f2f2f7;padding:2px 6px;border-radius:4px}
+  a{color:#5272f7}.muted{color:#6f6f71}
+  .shots{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .shots img{width:30%;min-width:170px;border:1px solid #ebebf0;border-radius:10px}
+  .wide{display:block;max-width:560px;width:100%;margin:14px auto;border:1px solid #ebebf0;border-radius:10px}
+  ul{line-height:2}
+</style>
 </head><body>
-<h1>Employee WiFi - opkg feed</h1>
-<p>This is the package feed for the <a href="https://github.com/DigitalCyberSoft/glinet-employeewifi">Employee WiFi</a> GL.iNet plugin. It is meant to be used by your router, not browsed.</p>
+<h1>Employee WiFi</h1>
+<p class="muted">Let staff connect a GL.iNet travel router to hotel WiFi from a simple page -
+no admin password, no advanced settings. (<a href="https://github.com/DigitalCyberSoft/glinet-employeewifi">source on GitHub</a>)</p>
+
+<div class="shots">
+  <img src="wifi-login.png" alt="Password gate" />
+  <img src="wifi-networks.png" alt="Pick a network" />
+  <img src="wifi-connect.png" alt="Connect" />
+</div>
+
 <h2>Install on your GL.iNet router (firmware 4.x)</h2>
-<p>In the router's <b>Plug-ins</b> page, add a software source:</p>
-<ul><li>Name: <code>empwifi</code></li>
-<li>URL: <code>https://digitalcybersoft.github.io/glinet-employeewifi</code></li></ul>
-<p>Then refresh and install <b>Employee WiFi</b>.</p>
-<p>Feed files: <a href="Packages">Packages</a> &middot; <a href="Packages.gz">Packages.gz</a> &middot; <a href="${PKG}_${VER}_all.ipk">${PKG}_${VER}_all.ipk</a></p>
+<p>In the router's <b>Plug-ins</b> page, click <b>Manage Sources</b> and add:</p>
+<ul>
+  <li>Name: <code>empwifi</code></li>
+  <li>URL: <code>https://digitalcybersoft.github.io/glinet-employeewifi</code></li>
+</ul>
+<img class="wide" src="add-source.png" alt="Add Custom Software Source dialog" />
+<p>Then refresh and install <b>Employee WiFi</b>. It appears in the admin under
+<b>Applications &rarr; Employee WiFi</b>:</p>
+<img class="wide" src="admin-page.png" alt="Employee WiFi admin page" />
+
+<p class="muted">Feed files: <a href="Packages">Packages</a> &middot;
+<a href="Packages.gz">Packages.gz</a> &middot;
+<a href="${PKG}_${VER}_all.ipk">${PKG}_${VER}_all.ipk</a></p>
 </body></html>
 HTML
-echo "feed: $FEED/Packages(.gz) + index.html"
+echo "feed: $FEED/Packages(.gz) + index.html + screenshots"
