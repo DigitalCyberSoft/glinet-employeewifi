@@ -34,6 +34,10 @@ It's a normal plug-in, served from this repo's GitHub Pages feed. On the router,
 - Name: `empwifi`
 - URL: `https://digitalcybersoft.github.io/glinet-employeewifi`
 
+<p align="center">
+  <img src="docs/screenshots/add-source.png" width="72%" alt="Add Custom Software Source dialog (Plug-ins -> Manage Sources)" />
+</p>
+
 Refresh and install **Employee WiFi** from the list.
 
 That's it. (Same thing from SSH if you prefer:
