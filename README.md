@@ -1,8 +1,8 @@
 # Employee WiFi
 
-A dead-simple page that lets staff connect a GL.iNet travel router to hotel WiFi —
-**no admin password, no advanced settings**. They scan, tap a network, type its password,
-and they're online.
+A dead-simple page that lets staff connect a GL.iNet travel router to guest WiFi — at a
+hotel, conference, cafe, anywhere — **no admin password, no advanced settings**. They scan,
+tap a network, type its password, and they're online.
 
 The employee page (`/wifi`):
 
@@ -41,7 +41,7 @@ It's a normal plug-in, served from this repo's GitHub Pages feed. On the router,
 Refresh and install **Employee WiFi** from the list.
 
 That's it. (Same thing from SSH if you prefer:
-`echo 'src/gz empwifi https://digitalcybersoft.github.io/glinet-employeewifi' >> /etc/opkg/customfeeds.conf && opkg update && opkg install gl-sdk4-ui-empwifiview`.)
+`echo 'src/gz empwifi https://digitalcybersoft.github.io/glinet-employeewifi' >> /etc/opkg/customfeeds.conf && opkg update && opkg install gl-employee-wifi`.)
 
 > The feed is built and published automatically by `.github/workflows/publish.yml` (GitHub
 > Pages, Source: GitHub Actions). Bump the version in `pkg/control` and push to republish.

@@ -7,4 +7,4 @@
 /www/views/gl-sdk4-ui-empwifiview.common.js.gz
 /www/i18n/gl-sdk4-ui-empwifiview.*.json
 /usr/share/empwifi/
-/lib/upgrade/keep.d/gl-sdk4-ui-empwifiview
+/lib/upgrade/keep.d/gl-employee-wifi

@@ -1,10 +1,11 @@
 #!/bin/bash
-# Build gl-sdk4-ui-empwifiview as an Architecture:all .ipk and an opkg feed index.
+# Build gl-employee-wifi as an Architecture:all .ipk and an opkg feed index.
 # Uses only tar + gzip + ar (no compiler, no SDK, no npm). Run on any Linux/macOS host.
 set -eu
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-PKG="gl-sdk4-ui-empwifiview"
+PKG="gl-employee-wifi"             # opkg package name (what users install)
+VIEW="gl-sdk4-ui-empwifiview"      # forced by GL's UI loader: /views/gl-sdk4-ui-<view>.common.js
 VER="$(awk -F': ' '/^Version:/{print $2; exit}' "$HERE/pkg/control")"
 OUT="$HERE/dist"
 FEED="$HERE/feed"
@@ -31,12 +32,12 @@ put "$HERE/lib-upgrade-keep.d/$PKG"       lib/upgrade/keep.d/$PKG
 
 # native admin view, pre-gzipped (host serves it via gzip_static)
 mkdir -p "$DATA/www/views"
-gzip -9 -c "$HERE/src/views/empwifiview.common.js" > "$DATA/www/views/$PKG.common.js.gz"
+gzip -9 -c "$HERE/src/views/empwifiview.common.js" > "$DATA/www/views/$VIEW.common.js.gz"
 
 # i18n: emit every GL language from the English source so no locale shows raw keys
 mkdir -p "$DATA/www/i18n"
 for L in en de es it ja zh-cn zh-tw; do
-	cp "$HERE/i18n/en.json" "$DATA/www/i18n/$PKG.$L.json"
+	cp "$HERE/i18n/en.json" "$DATA/www/i18n/$VIEW.$L.json"
 done
 
 find "$DATA" -type d -exec chmod 755 {} +
@@ -96,8 +97,9 @@ cat > "$FEED/index.html" <<HTML
 </style>
 </head><body>
 <h1>Employee WiFi</h1>
-<p class="muted">Let staff connect a GL.iNet travel router to hotel WiFi from a simple page -
-no admin password, no advanced settings. (<a href="https://github.com/DigitalCyberSoft/glinet-employeewifi">source on GitHub</a>)</p>
+<p class="muted">Let staff connect a GL.iNet travel router to guest WiFi - at a hotel,
+conference, cafe, anywhere - from a simple page, no admin password, no advanced settings.
+(<a href="https://github.com/DigitalCyberSoft/glinet-employeewifi">source on GitHub</a>)</p>
 
 <h2>Install on your GL.iNet router (firmware 4.x)</h2>
 <p>In the router's <b>Plug-ins</b> page, click <b>Manage Sources</b> and add:</p>

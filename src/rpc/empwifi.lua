@@ -1,4 +1,4 @@
--- empwifi: employee hotel-wifi RPC backend for GL.iNet firmware 4.x
+-- empwifi: employee guest-wifi RPC backend for GL.iNet firmware 4.x
 -- Admin methods (admin_*) require a logged-in admin session (root aclgroup), enforced by
 -- the oui dispatcher. Employee methods (emp_*) are registered as no-auth (see postinst)
 -- and enforce an employee password + short-lived token inside this module, because the
