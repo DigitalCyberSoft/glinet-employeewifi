@@ -31,6 +31,9 @@
       p + " .main .desc{display:flex;align-items:center;font-size:13px;color:var(--text-weak);margin-bottom:4px}" +
       p + " .main .desc .iconfont{font-size:14px;margin-right:14px}" +
       p + " .main .desc p{line-height:1.5;margin:0}" +
+      p + " .main .empwifi-warn{display:flex;align-items:flex-start;background:var(--error-background,#fcedf2);color:var(--error,#e04c7e);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13px}" +
+      p + " .main .empwifi-warn .iconfont{font-size:14px;margin-right:10px;margin-top:1px}" +
+      p + " .main .empwifi-warn p{margin:0;line-height:1.5}" +
       p + " .main .empwifi-config{list-style:none;margin:0;padding:0}" +
       p + " .main .empwifi-config>li{min-height:50px;display:flex;align-items:center;justify-content:space-between;padding:14px 15px;border-bottom:1px solid var(--divider)}" +
       p + " .main .empwifi-config>li>div:first-child{flex:1;color:var(--text-weak);padding-right:16px}" +
@@ -85,6 +88,10 @@
         var self = this;
         if (!self.cfg.no_password && !self.cfg.has_password && !self.newPassword) {
           self.$message.error(self.$t("empwifi.err_need_password"));
+          return;
+        }
+        if (self.newPassword && self.newPassword.length < 8) {
+          self.$message.error(self.$t("empwifi.password_too_short"));
           return;
         }
         self.saving = true;
@@ -159,22 +166,31 @@
           })));
       }
 
+      var body = [
+        h("div", { staticClass: "desc" }, [
+          h("span", { staticClass: "iconfont icon-info" }),
+          h("p", [t("empwifi.intro")])
+        ])
+      ];
+      // Loud warning: no-password mode lets any device on this router repoint the uplink.
+      if (self.cfg.no_password) {
+        body.push(h("div", { staticClass: "empwifi-warn" }, [
+          h("span", { staticClass: "iconfont icon-info" }),
+          h("p", [t("empwifi.no_password_warning")])
+        ]));
+      }
+      body.push(h("ul", { staticClass: "empwifi-config" }, rows));
+      body.push(h("div", { staticClass: "btns" }, [
+        h("gl-button", {
+          staticClass: "btn-item",
+          attrs: { type: "primary", disabled: self.saving },
+          on: { click: self.save }
+        }, [t("core.apply")])
+      ]));
+
       var main = self.loading
         ? [h("div", { staticClass: "desc" }, [h("p", [t("empwifi.loading")])])]
-        : [
-            h("div", { staticClass: "desc" }, [
-              h("span", { staticClass: "iconfont icon-info" }),
-              h("p", [t("empwifi.intro")])
-            ]),
-            h("ul", { staticClass: "empwifi-config" }, rows),
-            h("div", { staticClass: "btns" }, [
-              h("gl-button", {
-                staticClass: "btn-item",
-                attrs: { type: "primary", disabled: self.saving },
-                on: { click: self.save }
-              }, [t("core.apply")])
-            ])
-          ];
+        : body;
 
       return h("div", { staticClass: "empwifi-wrapper" }, [
         h("gl-title", { attrs: { title: t("empwifi.title") } }),

@@ -16,7 +16,8 @@ local CONFIG = "empwifi"
 local TOKEN_FILE = "/tmp/empwifi.session"
 local FAIL_FILE = "/tmp/empwifi.fail"
 local TOKEN_TTL = 3600
-local FAIL_MAX = 10
+local MAX_TOKENS = 20          -- cap concurrent employee sessions (bounds /tmp session file)
+local FAIL_MAX = 5
 local FAIL_WINDOW = 300
 
 local function tohex(s)
@@ -32,16 +33,26 @@ local function read_file(path)
 end
 
 local function rand_hex(n)
-    -- read EXACTLY n bytes; never f:read("*a") on /dev/urandom (it never EOFs -> OOM)
+    -- read EXACTLY n bytes; never f:read("*a") on /dev/urandom (it never EOFs -> OOM).
+    -- Fail CLOSED: if the CSPRNG is unavailable, return nil so callers refuse to issue a
+    -- token/salt rather than fall back to a time-seeded (predictable) value.
     local f = io.open("/dev/urandom", "rb")
-    local b
-    if f then
-        b = f:read(n)
-        f:close()
+    if not f then return nil end
+    local b = f:read(n)
+    f:close()
+    if not b or #b < n then return nil end
+    return tohex(b)
+end
+
+-- constant-time string equality (no early-exit byte compare). Token/hash are fixed length,
+-- so leaking length via the #a ~= #b check is not sensitive.
+local function consttime_eq(a, b)
+    if type(a) ~= "string" or type(b) ~= "string" or #a ~= #b then return false end
+    local diff = 0
+    for i = 1, #a do
+        if a:byte(i) ~= b:byte(i) then diff = diff + 1 end
     end
-    if b and #b >= n then return tohex(b) end
-    -- fallback: time-seeded, low entropy but never blank
-    return tohex(ngx.sha1_bin(tostring(ngx.now()) .. ":" .. tostring(os.time())))
+    return diff == 0
 end
 
 local function hash_pw(salt, pw)
@@ -52,9 +63,25 @@ local function hash_pw(salt, pw)
     return tohex(h)
 end
 
--- reject NUL and control characters (a string with none is safe to hand downstream)
+-- Reject NUL and control characters. This is the maximal input-layer filter we can apply
+-- to ssid/key: it blocks the real injection vector (newline/CR breaking out into a new
+-- UCI / wpa_supplicant config line). We deliberately do NOT charset-restrict beyond this:
+-- legitimate SSIDs contain '&' ("AT&T WiFi"), "'" ("Joe's Coffee"), spaces, '('; legitimate
+-- WPA passphrases contain '$ & ! @ #'. A shell-metachar whitelist would break exactly the
+-- networks employees need to join. ssid/key are passed to repeater.connect as a Lua TABLE
+-- (no shell in this module); shell-safety of those values is GL's repeater module's job,
+-- which its own admin UI relies on identically. (Verify on-device: probe SSID `a$(id)b`.)
 local function printable(s)
     return type(s) == "string" and s:find("%c") == nil
+end
+
+-- CSRF guard for the no-auth employee surface. A cross-origin attacker page can send a
+-- "simple" POST (text/plain) to /rpc with no preflight, but CANNOT set a custom header
+-- without triggering one. Requiring X-Empwifi on every emp_* call defeats that path; the
+-- public /wifi page sets it. (curl callers must add `-H 'X-Empwifi: 1'`.)
+local function csrf_ok()
+    local h = ngx.req.get_headers()
+    return type(h) == "table" and h["x-empwifi"] ~= nil
 end
 
 -- best-effort: keep /tmp state files out of "other" reads (paths are constants -> no injection)
@@ -77,25 +104,48 @@ end
 
 -- token handling -------------------------------------------------------------
 
+-- The session file holds one "token expiry" line per active employee, so concurrent staff
+-- do not evict each other. Reads prune expired lines; writes cap to MAX_TOKENS.
+local function live_tokens()
+    local now = os.time()
+    local out = {}
+    local data = read_file(TOKEN_FILE)
+    if data then
+        for tok, exp in data:gmatch("(%S+)%s+(%d+)") do
+            if now <= (tonumber(exp) or 0) then out[#out + 1] = { tok = tok, exp = tonumber(exp) } end
+        end
+    end
+    return out
+end
+
+local function write_tokens(list)
+    local f = io.open(TOKEN_FILE, "w")
+    if not f then return false end
+    local first = math.max(1, #list - MAX_TOKENS + 1)
+    for i = first, #list do
+        f:write(list[i].tok .. " " .. tostring(list[i].exp) .. "\n")
+    end
+    f:close()
+    chmod_600(TOKEN_FILE)
+    return true
+end
+
 local function new_token()
     local tok = rand_hex(16)
-    local f = io.open(TOKEN_FILE, "w")
-    if f then
-        f:write(tok .. " " .. tostring(os.time() + TOKEN_TTL))
-        f:close()
-        chmod_600(TOKEN_FILE)
-    end
+    if not tok then return nil end          -- CSPRNG unavailable -> refuse to issue a token
+    local list = live_tokens()
+    list[#list + 1] = { tok = tok, exp = os.time() + TOKEN_TTL }
+    if not write_tokens(list) then return nil end
     return tok
 end
 
 local function token_valid(tok)
     if get("no_password", "0") == "1" then return true end
     if type(tok) ~= "string" or #tok < 8 then return false end
-    local line = read_file(TOKEN_FILE)
-    if not line then return false end
-    local stored, exp = line:match("^(%S+)%s+(%d+)")
-    if not stored or stored ~= tok then return false end
-    return os.time() <= (tonumber(exp) or 0)
+    for _, e in ipairs(live_tokens()) do
+        if consttime_eq(e.tok, tok) then return true end
+    end
+    return false
 end
 
 -- simple lockout on repeated bad employee logins
@@ -119,12 +169,8 @@ local function fail_record()
     if f then f:write((cnt + 1) .. " " .. ts); f:close(); chmod_600(FAIL_FILE) end
 end
 
-local function fail_reset()
-    os.remove(FAIL_FILE)
-end
-
 local function authed(args)
-    return token_valid(args and args.token)
+    return csrf_ok() and token_valid(args and args.token)
 end
 
 -- admin methods (admin session required by dispatcher) -----------------------
@@ -158,10 +204,16 @@ function M.admin_set_config(args)
         c:set(CONFIG, "global", "emp_password", "")
         c:set(CONFIG, "global", "pw_salt", "")
     elseif type(args.emp_password) == "string" and #args.emp_password > 0 then
+        if #args.emp_password < 8 then
+            return rpc.ERROR_CODE_INVALID_PARAMS, "password_too_short"
+        end
         if #args.emp_password > 128 then
             return rpc.ERROR_CODE_INVALID_PARAMS, "password_too_long"
         end
         local salt = rand_hex(8)
+        if not salt then
+            return rpc.ERROR_CODE_INTERNAL_ERROR, "rng_unavailable"
+        end
         c:set(CONFIG, "global", "pw_salt", salt)
         c:set(CONFIG, "global", "emp_password", hash_pw(salt, args.emp_password))
     end
@@ -173,10 +225,13 @@ end
 -- employee methods (no-auth at oui layer; gated here) ------------------------
 
 function M.emp_login(args)
+    if not csrf_ok() then return rpc.ERROR_CODE_ACCESS, "unauthorized" end
     args = args or {}
 
     if get("no_password", "0") == "1" then
-        return { token = new_token(), no_password = true }
+        local tok = new_token()
+        if not tok then return rpc.ERROR_CODE_INTERNAL_ERROR, "token_failed" end
+        return { token = tok, no_password = true }
     end
 
     if not fail_ok() then
@@ -189,13 +244,17 @@ function M.emp_login(args)
     end
 
     local salt = get("pw_salt", "")
-    if type(args.password) ~= "string" or hash_pw(salt, args.password) ~= stored then
+    if type(args.password) ~= "string" or not consttime_eq(hash_pw(salt, args.password), stored) then
+        -- Deliberately do NOT reset the failure counter on an interleaved success: a legit
+        -- login must not wipe an attacker's in-progress brute-force budget. The window decay
+        -- in fail_record() is the only thing that clears it.
         fail_record()
         return rpc.ERROR_CODE_ACCESS, "bad_password"
     end
 
-    fail_reset()
-    return { token = new_token() }
+    local tok = new_token()
+    if not tok then return rpc.ERROR_CODE_INTERNAL_ERROR, "token_failed" end
+    return { token = tok }
 end
 
 function M.emp_scan(args)

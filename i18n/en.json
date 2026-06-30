@@ -4,6 +4,7 @@
         "intro": "Let staff connect this router to guest WiFi (hotel, conference, anywhere) from a simple page, without the admin password or advanced settings.",
         "no_password": "No password required",
         "no_password_desc": "Allow anyone on this router's network to open the employee page without a password.",
+        "no_password_warning": "Warning: with no password, anyone connected to this router can open the employee page and change which network the router joins. Only use this on a network you trust.",
         "password": "Employee page password",
         "password_ph": "Set a password",
         "password_keep": "Leave blank to keep current password",
@@ -13,6 +14,7 @@
         "camouflage_desc": "Hide this router behind a disguised MAC address when joining a network.",
         "loading": "Loading...",
         "saved": "Saved",
+        "password_too_short": "Password must be at least 8 characters.",
         "save_failed": "Save failed",
         "load_failed": "Failed to load settings",
         "err_need_password": "Set a password, or enable \"No password required\"."

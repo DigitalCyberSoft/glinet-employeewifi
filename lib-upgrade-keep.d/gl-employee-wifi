@@ -5,6 +5,12 @@
 /usr/share/gl-validator.d/empwifi.lua
 /usr/share/oui/menu.d/empwifiview.json
 /www/views/gl-sdk4-ui-empwifiview.common.js.gz
-/www/i18n/gl-sdk4-ui-empwifiview.*.json
+/www/i18n/gl-sdk4-ui-empwifiview.en.json
+/www/i18n/gl-sdk4-ui-empwifiview.de.json
+/www/i18n/gl-sdk4-ui-empwifiview.es.json
+/www/i18n/gl-sdk4-ui-empwifiview.it.json
+/www/i18n/gl-sdk4-ui-empwifiview.ja.json
+/www/i18n/gl-sdk4-ui-empwifiview.zh-cn.json
+/www/i18n/gl-sdk4-ui-empwifiview.zh-tw.json
 /usr/share/empwifi/
 /lib/upgrade/keep.d/gl-employee-wifi

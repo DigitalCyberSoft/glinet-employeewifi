@@ -170,7 +170,9 @@
     args = args || {};
     return fetch("/rpc", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      // X-Empwifi is a CSRF guard: the backend rejects emp_* calls without it, and a
+      // cross-origin "simple" request cannot set a custom header without preflight.
+      headers: { "Content-Type": "application/json", "X-Empwifi": "1" },
       body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method: "call",
         params: ["", "empwifi", method, args] })
     }).then(function (r) { return r.json(); }).then(function (j) {
