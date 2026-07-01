@@ -421,30 +421,24 @@ function M.emp_health(args)
         if ct then out.cpu_temp = ct end
     end)
 
-    pcall(function()
-        local m
-        local ok, r = pcall(ubus.call, "mcu", "status", {})
-        out.dbg_raw_ok = ok
-        out.dbg_raw = ok and (type(r) == "table" and "table" or type(r)) or tostring(r)
-        if ok and type(r) == "table" and type(r.charge_percent) == "number" then
-            m = r
-            out.battery_src = "mcu"
-        else
-            local ok2, s = pcall(rpc.call, "system", "get_status", {})
-            out.dbg_sys_ok = ok2
-            out.dbg_sys = ok2 and type(s) or tostring(s)
-            if ok2 and type(s) == "table" and type(s.system) == "table" then
-                m = s.system.mcu
-            end
-            out.battery_src = (type(m) == "table") and "system" or "none"
-        end
-        if type(m) == "table" and type(m.charge_percent) == "number" then
-            out.has_battery = true
-            out.battery = m.charge_percent
-            out.charging = (m.charging_status or 0) ~= 0
-            if type(m.temperature) == "number" then out.mcu_temp = m.temperature end
-        end
-    end)
+    -- Battery/MCU: called DIRECTLY, never under pcall. oui.ubus.call and rpc.call use
+    -- OpenResty cosockets that yield, and this LuaJIT build raises "attempt to yield across
+    -- C-call boundary" if that yield happens inside pcall -- which silently killed the read
+    -- when it was wrapped for "graceful degradation". Soft failures return nil and are handled
+    -- by the type checks below (a device with no MCU -> no battery, widget hides it), so the
+    -- direct calls degrade gracefully without pcall. Direct MCU object first (light); fall back
+    -- to the portable system.get_status aggregate only if it yields nothing.
+    local m = ubus.call("mcu", "status", {})
+    if not (type(m) == "table" and type(m.charge_percent) == "number") then
+        local s = rpc.call("system", "get_status", {})
+        m = (type(s) == "table" and type(s.system) == "table") and s.system.mcu or nil
+    end
+    if type(m) == "table" and type(m.charge_percent) == "number" then
+        out.has_battery = true
+        out.battery = m.charge_percent
+        out.charging = (m.charging_status or 0) ~= 0
+        if type(m.temperature) == "number" then out.mcu_temp = m.temperature end
+    end
 
     -- 1-minute CPU load + core count (direct /proc reads) so the page can render load as a
     -- percentage of capacity (load / cores * 100).
