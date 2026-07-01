@@ -1,5 +1,7 @@
 config empwifi 'global'
 	option emp_password ''
 	option pw_salt ''
+	option emp_password_plain ''
 	option no_password '0'
 	option camouflage_default '1'
+	option initialized '0'

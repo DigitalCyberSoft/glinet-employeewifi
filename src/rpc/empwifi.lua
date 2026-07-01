@@ -102,6 +102,22 @@ local function camouflage_supported()
     return c ~= nil and c:find("disguise", 1, true) ~= nil
 end
 
+-- An auto-generated password is written as PLAINTEXT by postinst (the shell has no
+-- ngx.sha1_bin to hash with). On the first RPC touch, hash it into emp_password/pw_salt so
+-- login verifies normally. The plaintext is kept in emp_password_plain solely so the
+-- admin-gated page can display it to hand out; no emp_* (no-auth) method ever returns it.
+local function ensure_materialized()
+    local plain = get("emp_password_plain", "")
+    if plain ~= "" and get("emp_password", "") == "" then
+        local salt = rand_hex(8)
+        if not salt then return end
+        local c = uci.cursor()
+        c:set(CONFIG, "global", "pw_salt", salt)
+        c:set(CONFIG, "global", "emp_password", hash_pw(salt, plain))
+        c:commit(CONFIG)
+    end
+end
+
 -- token handling -------------------------------------------------------------
 
 -- The session file holds one "token expiry" line per active employee, so concurrent staff
@@ -176,9 +192,13 @@ end
 -- admin methods (admin session required by dispatcher) -----------------------
 
 function M.admin_get_config()
+    ensure_materialized()
     return {
         no_password = get("no_password", "0") == "1",
         has_password = get("emp_password", "") ~= "",
+        -- non-empty only while an auto-generated password is in effect (cleared once the
+        -- admin sets their own); admin-gated method, so safe to return for display.
+        generated_password = get("emp_password_plain", ""),
         camouflage_default = get("camouflage_default", "1") == "1",
         camouflage_supported = camouflage_supported()
     }
@@ -203,6 +223,7 @@ function M.admin_set_config(args)
     if args.clear_password == true then
         c:set(CONFIG, "global", "emp_password", "")
         c:set(CONFIG, "global", "pw_salt", "")
+        c:set(CONFIG, "global", "emp_password_plain", "")
     elseif type(args.emp_password) == "string" and #args.emp_password > 0 then
         if #args.emp_password < 8 then
             return rpc.ERROR_CODE_INVALID_PARAMS, "password_too_short"
@@ -216,6 +237,8 @@ function M.admin_set_config(args)
         end
         c:set(CONFIG, "global", "pw_salt", salt)
         c:set(CONFIG, "global", "emp_password", hash_pw(salt, args.emp_password))
+        -- admin chose their own password -> stop displaying the auto-generated one
+        c:set(CONFIG, "global", "emp_password_plain", "")
     end
 
     c:commit(CONFIG)
@@ -227,6 +250,7 @@ end
 function M.emp_login(args)
     if not csrf_ok() then return rpc.ERROR_CODE_ACCESS, "unauthorized" end
     args = args or {}
+    ensure_materialized()   -- make an auto-generated password usable before first admin visit
 
     if get("no_password", "0") == "1" then
         local tok = new_token()

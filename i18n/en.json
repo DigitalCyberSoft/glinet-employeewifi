@@ -5,6 +5,8 @@
         "no_password": "No password required",
         "no_password_desc": "Allow anyone on this router's network to open the employee page without a password.",
         "no_password_warning": "Warning: with no password, anyone connected to this router can open the employee page and change which network the router joins. Only use this on a network you trust.",
+        "generated_label": "Auto-generated employee password",
+        "generated_hint": "Give this to staff so they can open the employee WiFi page. Set your own below to replace it.",
         "password": "Employee page password",
         "password_ph": "Set a password",
         "password_keep": "Leave blank to keep current password",

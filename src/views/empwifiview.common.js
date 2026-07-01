@@ -44,6 +44,9 @@
       p + " .main .empwifi-warn{display:flex;align-items:flex-start;background:var(--error-background,#fcedf2);color:var(--error,#e04c7e);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13px}" +
       p + " .main .empwifi-warn .iconfont{font-size:14px;margin-right:10px;margin-top:1px}" +
       p + " .main .empwifi-warn p{margin:0;line-height:1.5}" +
+      p + " .main .empwifi-generated{background:var(--success-background,#e7f9f8);border-radius:6px;padding:12px 14px;margin-bottom:12px}" +
+      p + " .main .empwifi-generated .label{font-size:12px;color:var(--text-weak)}" +
+      p + " .main .empwifi-generated .pw{font-family:monospace;font-size:17px;font-weight:600;color:var(--text-title);letter-spacing:1px;user-select:all;margin:5px 0}" +
       p + " .main .empwifi-config{list-style:none;margin:0;padding:0}" +
       p + " .main .empwifi-config>li{min-height:50px;display:flex;align-items:center;justify-content:space-between;padding:14px 15px;border-bottom:1px solid var(--divider)}" +
       p + " .main .empwifi-config>li>div:first-child{flex:1;color:var(--text-weak);padding-right:16px}" +
@@ -68,6 +71,7 @@
         cfg: {
           no_password: false,
           has_password: false,
+          generated_password: "",
           camouflage_default: true,
           camouflage_supported: false
         },
@@ -182,6 +186,14 @@
           h("p", [t("empwifi.intro")])
         ])
       ];
+      // Auto-generated employee password (seeded on install) shown until the admin sets one.
+      if (self.cfg.generated_password) {
+        body.push(h("div", { staticClass: "empwifi-generated" }, [
+          h("div", { staticClass: "label" }, [t("empwifi.generated_label")]),
+          h("div", { staticClass: "pw" }, [self.cfg.generated_password]),
+          h("div", { staticClass: "label" }, [t("empwifi.generated_hint")])
+        ]));
+      }
       // Loud warning: no-password mode lets any device on this router repoint the uplink.
       if (self.cfg.no_password) {
         body.push(h("div", { staticClass: "empwifi-warn" }, [
