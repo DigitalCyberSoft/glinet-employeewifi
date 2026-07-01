@@ -60,11 +60,10 @@
     display: flex; align-items: center; justify-content: center; }
   .brand h1 { font-size: 18px; font-weight: 600; margin: 0; color: var(--text-title); }
   .brand #health { margin-left: auto; }
-  .health { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px 14px; font-size: 12px; color: var(--text-weak); }
-  .health > span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .health { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 4px 10px; font-size: 11px; color: var(--text-weak); }
+  .health > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
   .health svg { display: block; }
-  .health .chg { color: var(--text-hint); }
-  .health .chg.on { color: var(--success); }
+  .health .batt.chg { color: var(--success); }
   .card { background: var(--background-card); border-radius: 10px; padding: 20px 22px; margin-bottom: 16px; }
   .card h2 { font-size: 15px; font-weight: 600; margin: 0 0 4px; color: var(--text-title); }
   .muted { color: var(--text-weak); font-size: 13px; line-height: 1.5; margin: 0; }
@@ -233,24 +232,30 @@
   function cpuSvg() {
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>';
   }
-  function boltSvg() {
-    return '<svg width="10" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>';
-  }
-
   // Device status widget in the header. Temperature mirrors the GL admin UI: MCU/device
   // sensor when present, else CPU/SoC thermal zone (both Celsius). Load is the 1-minute
-  // average. Battery + an explicit charging/on-battery indicator show only when the device
-  // reports a battery (has_battery).
+  // average shown as a percentage of core count. Battery chip doubles as the charging
+  // indicator (bolt + green when charging, title spells out the state).
   function renderHealth(hd) {
     var el = $("health");
     if (!hd || (hd.cpu_temp == null && hd.mcu_temp == null && hd.load == null && !hd.has_battery)) { el.classList.add("hide"); el.innerHTML = ""; return; }
     var parts = [];
     var devTemp = (hd.mcu_temp != null) ? hd.mcu_temp : hd.cpu_temp;
-    if (devTemp != null) parts.push("<span>" + thermoSvg() + Math.round(devTemp) + "&deg;C</span>");
-    if (hd.load != null) parts.push('<span title="1-minute CPU load">' + cpuSvg() + hd.load.toFixed(2) + "</span>");
+    if (devTemp != null) {
+      // Shown value mirrors GL (MCU/device sensor). When both sensors exist, reveal the
+      // CPU/SoC die temp on hover (title attribute; desktop only, no touch tooltip).
+      var tip = (hd.mcu_temp != null && hd.cpu_temp != null)
+        ? ("Device " + Math.round(hd.mcu_temp) + "°C, CPU " + Math.round(hd.cpu_temp) + "°C")
+        : (hd.mcu_temp != null ? "Device temperature" : "CPU temperature");
+      parts.push('<span title="' + tip + '">' + thermoSvg() + Math.round(devTemp) + "&deg;</span>");
+    }
+    if (hd.load != null) {
+      var cores = hd.cores || 1;
+      parts.push('<span title="load ' + hd.load.toFixed(2) + " / " + cores + ' core' + (cores > 1 ? "s" : "") + '">' + cpuSvg() + Math.round(hd.load / cores * 100) + "%</span>");
+    }
     if (hd.has_battery && hd.battery != null) {
-      parts.push("<span>" + batterySvg(hd.battery, !!hd.charging) + Math.round(hd.battery) + "%</span>");
-      parts.push('<span class="chg' + (hd.charging ? " on" : "") + '">' + boltSvg() + (hd.charging ? "Charging" : "On battery") + "</span>");
+      var chg = !!hd.charging;
+      parts.push('<span class="batt' + (chg ? " chg" : "") + '" title="' + (chg ? "Charging" : "On battery") + '">' + batterySvg(hd.battery, chg) + Math.round(hd.battery) + "%</span>");
     }
     el.innerHTML = parts.join("");
     el.classList.toggle("hide", parts.length === 0);

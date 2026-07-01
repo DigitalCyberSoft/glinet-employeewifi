@@ -412,25 +412,41 @@ function M.emp_health(args)
     args = args or {}
     local out = {}
 
-    local ct = cpu_temp()
-    if ct then out.cpu_temp = ct end
+    -- Each sensor group is gathered under pcall: a failed read (unreadable sysfs, MCU
+    -- unreachable, malformed ubus reply, missing /proc) omits just that field instead of
+    -- failing the whole call. The page null-checks every field, so it degrades to showing
+    -- only what this device actually provides (or hides the widget if nothing is available).
+    pcall(function()
+        local ct = cpu_temp()
+        if ct then out.cpu_temp = ct end
+    end)
 
-    local m = ubus.call("mcu", "status", {})
-    if not (type(m) == "table" and type(m.charge_percent) == "number") then
-        local s = rpc.call("system", "get_status", {})   -- fallback: portable aggregate
-        m = (type(s) == "table" and type(s.system) == "table") and s.system.mcu or nil
-    end
-    if type(m) == "table" and type(m.charge_percent) == "number" then
-        out.has_battery = true
-        out.battery = m.charge_percent
-        out.charging = (m.charging_status or 0) ~= 0
-        if type(m.temperature) == "number" then out.mcu_temp = m.temperature end
-    end
+    pcall(function()
+        local m = ubus.call("mcu", "status", {})
+        if not (type(m) == "table" and type(m.charge_percent) == "number") then
+            local s = rpc.call("system", "get_status", {})   -- fallback: portable aggregate
+            m = (type(s) == "table" and type(s.system) == "table") and s.system.mcu or nil
+        end
+        if type(m) == "table" and type(m.charge_percent) == "number" then
+            out.has_battery = true
+            out.battery = m.charge_percent
+            out.charging = (m.charging_status or 0) ~= 0
+            if type(m.temperature) == "number" then out.mcu_temp = m.temperature end
+        end
+    end)
 
-    -- 1-minute CPU load average (direct /proc read; cheaper than system.get_status).
-    local la = read_file("/proc/loadavg")
-    local one = la and la:match("^%s*([%d%.]+)")
-    if one then out.load = tonumber(one) end
+    -- 1-minute CPU load + core count (direct /proc reads) so the page can render load as a
+    -- percentage of capacity (load / cores * 100).
+    pcall(function()
+        local la = read_file("/proc/loadavg")
+        local one = la and la:match("^%s*([%d%.]+)")
+        if one then out.load = tonumber(one) end
+        local cores = 0
+        for line in (read_file("/proc/cpuinfo") or ""):gmatch("[^\n]+") do
+            if line:match("^processor%s*:") then cores = cores + 1 end
+        end
+        if cores > 0 then out.cores = cores end
+    end)
 
     -- Banner shown per admin scope (off|unauth|authed|both). "authed" == the caller holds a
     -- valid employee token (token_valid is also true in no-password mode: no gate to be
