@@ -18,8 +18,18 @@
 (function () {
   "use strict";
 
+  // The session id is the Admin-Token cookie value, and it MUST be passed as params[0]:
+  // this firmware (4.x on ramips) authorizes RPC from params[0] (older 4.x authorized from
+  // the request header, so a literal placeholder happened to work there). Sending anything
+  // but the real sid yields "Access denied", which the SPA treats as an expired session and
+  // logs the admin out. Read the cookie so both firmware families authorize.
+  function sid() {
+    var m = document.cookie.match(/(?:^|;\s*)Admin-Token=([^;]*)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
   function req(method, args) {
-    return window.$request("call", ["sid", "empwifi", method, args || {}]);
+    return window.$request("call", [sid(), "empwifi", method, args || {}]);
   }
 
   function injectStyle() {
