@@ -21,8 +21,11 @@ The admin page — a native entry in the GL.iNet admin (Applications → Employe
 ## What it does
 
 - Adds a public page at **`/wifi`** for employees: scan → pick → password → connected.
+- Shows live **device status** on that page: temperature, battery level and charging state,
+  and CPU load (each appears only where the hardware reports it).
 - Adds an **Employee WiFi** page in the router admin (Applications) where you set the
-  employee password, turn the password off, and toggle camouflage.
+  employee password, turn the password off, toggle camouflage, and set an optional
+  **message banner** for the employee page.
 - Joins the chosen network as the router's uplink (repeater) with camouflage on.
 - That's the whole feature. No band selection, no channels, no advanced WiFi settings.
 
@@ -54,10 +57,12 @@ That's it. (Same thing from SSH if you prefer:
 
 Open **Applications → Employee WiFi**:
 
-- A **random employee password is generated on install** and shown on this page — hand it
+- A **random employee password is generated on install** and shown on this page. Hand it
   to staff, or replace it with your own.
-- **No password required** for trusted setups (this also skips the generated password), and
+- **No password required** for trusted setups (this also skips the generated password).
 - **Camouflage** on by default (hidden behind a disguised MAC), where the device supports it.
+- An optional **message banner**: type a short note and choose who sees it on the employee
+  page (everyone, only before login, or only after login).
 
 ## Requirements
 
@@ -79,6 +84,7 @@ Open **Applications → Employee WiFi**:
 The employee page is reachable by anyone on the router's LAN, so all enforcement lives in
 the backend and the page is never trusted: a password check (a random one is set at
 install, minimum 8 characters), a short-lived token, login rate-limiting, a CSRF guard, and
-strict input validation. Employee actions can only scan and join a network — never the
-router's advanced settings or admin RPC. Use "no password required" only on networks you
-trust.
+strict input validation. Employee actions can only scan and join a network, never the
+router's advanced settings or admin RPC. The page also reads basic device status
+(temperature, battery, CPU load) for display only; this exposes no settings and no
+credentials. Use "no password required" only on networks you trust.
