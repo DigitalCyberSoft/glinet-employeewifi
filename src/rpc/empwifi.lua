@@ -9,6 +9,7 @@
 
 local rpc = require "oui.rpc"
 local uci = require "uci"
+local ubus = require "oui.ubus"
 
 local M = {}
 
@@ -380,29 +381,50 @@ function M.emp_status(args)
     }
 end
 
--- No-auth device status + banner for the public /wifi page. Reads the stock system status
--- SERVER-SIDE and returns ONLY the two safe scalars (temperature, battery); the rest of
--- system.get_status carries WiFi PSKs and is never forwarded. system.mcu is absent on
--- devices without a battery MCU (e.g. GL-MT1300 Beryl), so has_battery stays false and the
--- page hides the battery widget. No token required (status/banner are readable pre-login),
--- but CSRF header still enforced for consistency with the rest of the emp_* surface.
+-- CPU temperature from thermal-zone sysfs (millidegrees C). Prefer a zone whose type names
+-- "cpu"; else the first present zone. Returns an integer degC, or nil if unreadable.
+local function cpu_temp()
+    local zone
+    for z = 0, 9 do
+        local ty = read_file("/sys/class/thermal/thermal_zone" .. z .. "/type")
+        if not ty then break end
+        if zone == nil then zone = z end                            -- fallback: first zone
+        if ty:lower():find("cpu", 1, true) then zone = z; break end -- prefer a cpu zone
+    end
+    if zone == nil then return nil end
+    local raw = read_file("/sys/class/thermal/thermal_zone" .. zone .. "/temp")
+    local n = raw and tonumber(raw:match("%-?%d+"))
+    if not n then return nil end
+    if n >= 1000 or n <= -1000 then n = n / 1000 end                -- millidegrees -> degrees
+    return math.floor(n + 0.5)
+end
+
+-- No-auth device status + banner for the public /wifi page. CPU temp is a direct sysfs read;
+-- battery comes from the MCU object directly (light, and the PSK-bearing system.get_status
+-- blob is never touched). "mcu" is the GL battery MCU (e.g. gl-puli-mcu on the XE3000); if it
+-- is absent or named differently on another battery model, fall back to the portable
+-- system.get_status aggregate so the widget still works fleet-wide. Devices with no battery
+-- (no mcu object, no system.mcu, e.g. GL-MT1300 Beryl) yield has_battery=false and the page
+-- hides the battery widget. No token required (status/banner readable pre-login); CSRF header
+-- still enforced for consistency with the rest of the emp_* surface.
 function M.emp_health(args)
     if not csrf_ok() then return rpc.ERROR_CODE_ACCESS, "unauthorized" end
     args = args or {}
     local out = {}
 
-    local s = rpc.call("system", "get_status", {})
-    if type(s) == "table" and type(s.system) == "table" then
-        local sys = s.system
-        if type(sys.cpu) == "table" and type(sys.cpu.temperature) == "number" then
-            out.cpu_temp = sys.cpu.temperature
-        end
-        if type(sys.mcu) == "table" and type(sys.mcu.charge_percent) == "number" then
-            out.has_battery = true
-            out.battery = sys.mcu.charge_percent
-            out.charging = (sys.mcu.charging_status or 0) ~= 0
-            if type(sys.mcu.temperature) == "number" then out.mcu_temp = sys.mcu.temperature end
-        end
+    local ct = cpu_temp()
+    if ct then out.cpu_temp = ct end
+
+    local m = ubus.call("mcu", "status", {})
+    if not (type(m) == "table" and type(m.charge_percent) == "number") then
+        local s = rpc.call("system", "get_status", {})   -- fallback: portable aggregate
+        m = (type(s) == "table" and type(s.system) == "table") and s.system.mcu or nil
+    end
+    if type(m) == "table" and type(m.charge_percent) == "number" then
+        out.has_battery = true
+        out.battery = m.charge_percent
+        out.charging = (m.charging_status or 0) ~= 0
+        if type(m.temperature) == "number" then out.mcu_temp = m.temperature end
     end
 
     -- Banner shown per admin scope (off|unauth|authed|both). "authed" == the caller holds a
