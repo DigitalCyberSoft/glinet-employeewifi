@@ -12,9 +12,13 @@ fail() { echo "empwifi: $1" >&2; exit 1; }
 # 1b. On FIRST install only, seed a random employee-page password so the page is never left
 #     open with no/default credentials. Guarded by an 'initialized' flag (survives upgrades
 #     as a conffile) AND an empty emp_password, so an upgrade never overwrites a real setting.
-#     Stored as plaintext for the admin page to display and hand out; the Lua backend hashes
-#     it on first use. The admin can replace it any time (which clears the plaintext).
-if [ "$(uci -q get empwifi.global.initialized)" != "1" ] && [ -z "$(uci -q get empwifi.global.emp_password)" ]; then
+#     Also skipped when no_password='1': the admin has deliberately made the page passwordless,
+#     so a generated password would be pointless clutter. Stored as plaintext for the admin
+#     page to display and hand out; the Lua backend hashes it on first use. The admin can
+#     replace it any time (which clears the plaintext).
+if [ "$(uci -q get empwifi.global.initialized)" != "1" ] \
+   && [ -z "$(uci -q get empwifi.global.emp_password)" ] \
+   && [ "$(uci -q get empwifi.global.no_password)" != "1" ]; then
 	pw="$(tr -dc 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789' < /dev/urandom | head -c 10)"
 	[ -n "$pw" ] || pw="$(head -c 8 /dev/urandom | md5sum | head -c 10)"   # fallback, never blank
 	uci -q set empwifi.global='empwifi'
