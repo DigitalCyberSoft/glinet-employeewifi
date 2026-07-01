@@ -422,19 +422,21 @@ function M.emp_health(args)
     end)
 
     pcall(function()
-        -- Try the direct MCU object first (light). Isolate it in its OWN pcall: oui.ubus.call
-        -- is a cosocket call that can RAISE (e.g. cjson.decode of a short read), and that must
-        -- not skip the system.get_status fallback. If the direct read yields nothing usable,
-        -- fall back to the portable aggregate so battery still works.
         local m
         local ok, r = pcall(ubus.call, "mcu", "status", {})
+        out.dbg_raw_ok = ok
+        out.dbg_raw = ok and (type(r) == "table" and "table" or type(r)) or tostring(r)
         if ok and type(r) == "table" and type(r.charge_percent) == "number" then
             m = r
             out.battery_src = "mcu"
         else
-            local s = rpc.call("system", "get_status", {})
-            m = (type(s) == "table" and type(s.system) == "table") and s.system.mcu or nil
-            out.battery_src = m and "system" or "none"
+            local ok2, s = pcall(rpc.call, "system", "get_status", {})
+            out.dbg_sys_ok = ok2
+            out.dbg_sys = ok2 and type(s) or tostring(s)
+            if ok2 and type(s) == "table" and type(s.system) == "table" then
+                m = s.system.mcu
+            end
+            out.battery_src = (type(m) == "table") and "system" or "none"
         end
         if type(m) == "table" and type(m.charge_percent) == "number" then
             out.has_battery = true
