@@ -54,15 +54,17 @@ That's it. (Same thing from SSH if you prefer:
 
 Open **Applications → Employee WiFi**:
 
-- **Set a password** staff type to open the `/wifi` page, or
-- **No password required** for trusted setups, and
+- A **random employee password is generated on install** and shown on this page — hand it
+  to staff, or replace it with your own.
+- **No password required** for trusted setups (this also skips the generated password), and
 - **Camouflage** on by default (hidden behind a disguised MAC), where the device supports it.
 
 ## Requirements
 
-- GL.iNet firmware **4.x** (the current web UI). Tested on the GL-XE3000; built
-  architecture-independent (`Architecture: all`), so it runs on the wider 4.x family
-  (Opal, Beryl, Slate, Flint, …). The installer stops cleanly on a device that can't run it.
+- GL.iNet firmware **4.x** (the current web UI). Tested on the GL-XE3000 (fw 4.8.3) and the
+  GL-MT1300 Beryl (fw 4.3.19); built architecture-independent (`Architecture: all`), so it
+  runs on the wider 4.x family (Opal, Slate, Flint, …). The installer stops cleanly on a
+  device that can't run it.
 
 ## Built to stay small and simple
 
@@ -74,8 +76,9 @@ Open **Applications → Employee WiFi**:
 
 ## Security in one paragraph
 
-The employee page is reachable by anyone on the router's LAN, so the password check, a
-short-lived token, login rate-limiting, and strict input validation all live in the
-backend — the page is never trusted. Employee actions can only scan and join a network;
-they can never reach the router's advanced settings or admin RPC. Use "no password
-required" only on networks you trust.
+The employee page is reachable by anyone on the router's LAN, so all enforcement lives in
+the backend and the page is never trusted: a password check (a random one is set at
+install, minimum 8 characters), a short-lived token, login rate-limiting, a CSRF guard, and
+strict input validation. Employee actions can only scan and join a network — never the
+router's advanced settings or admin RPC. Use "no password required" only on networks you
+trust.
