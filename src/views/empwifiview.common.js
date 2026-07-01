@@ -73,7 +73,9 @@
           has_password: false,
           generated_password: "",
           camouflage_default: true,
-          camouflage_supported: false
+          camouflage_supported: false,
+          banner_text: "",
+          banner_scope: "both"
         },
         newPassword: ""
       };
@@ -111,7 +113,9 @@
         self.saving = true;
         var args = {
           no_password: !!self.cfg.no_password,
-          camouflage_default: !!self.cfg.camouflage_default
+          camouflage_default: !!self.cfg.camouflage_default,
+          banner_text: self.cfg.banner_text || "",
+          banner_scope: self.cfg.banner_scope || "both"
         };
         if (self.newPassword) args.emp_password = self.newPassword;
 
@@ -179,6 +183,31 @@
             }
           })));
       }
+
+      rows.push(row(t("empwifi.banner"), t("empwifi.banner_desc"),
+        h("el-input", {
+          staticClass: "empwifi-input",
+          attrs: { type: "textarea", rows: 2, maxlength: 280, placeholder: t("empwifi.banner_ph") },
+          model: {
+            value: self.cfg.banner_text,
+            callback: function (v) { self.$set(self.cfg, "banner_text", v); }
+          }
+        })));
+
+      rows.push(row(t("empwifi.banner_scope"), t("empwifi.banner_scope_desc"),
+        h("el-select", {
+          staticClass: "empwifi-input",
+          attrs: { size: "small" },
+          model: {
+            value: self.cfg.banner_scope,
+            callback: function (v) { self.$set(self.cfg, "banner_scope", v); }
+          }
+        }, [
+          h("el-option", { attrs: { label: t("empwifi.banner_off"), value: "off" } }),
+          h("el-option", { attrs: { label: t("empwifi.banner_both"), value: "both" } }),
+          h("el-option", { attrs: { label: t("empwifi.banner_unauth"), value: "unauth" } }),
+          h("el-option", { attrs: { label: t("empwifi.banner_authed"), value: "authed" } })
+        ])));
 
       var body = [
         h("div", { staticClass: "desc" }, [

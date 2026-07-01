@@ -200,7 +200,9 @@ function M.admin_get_config()
         -- admin sets their own); admin-gated method, so safe to return for display.
         generated_password = get("emp_password_plain", ""),
         camouflage_default = get("camouflage_default", "1") == "1",
-        camouflage_supported = camouflage_supported()
+        camouflage_supported = camouflage_supported(),
+        banner_text = get("banner_text", ""),
+        banner_scope = get("banner_scope", "both")
     }
 end
 
@@ -239,6 +241,26 @@ function M.admin_set_config(args)
         c:set(CONFIG, "global", "emp_password", hash_pw(salt, args.emp_password))
         -- admin chose their own password -> stop displaying the auto-generated one
         c:set(CONFIG, "global", "emp_password_plain", "")
+    end
+
+    -- Admin-authored banner for the public /wifi page. Stored raw and rendered as
+    -- textContent on that page (never innerHTML), so no HTML/script can execute; the
+    -- printable() control-char filter additionally keeps it single-line. Length-capped.
+    if type(args.banner_text) == "string" then
+        if #args.banner_text > 280 then
+            return rpc.ERROR_CODE_INVALID_PARAMS, "banner_too_long"
+        end
+        if args.banner_text ~= "" and not printable(args.banner_text) then
+            return rpc.ERROR_CODE_INVALID_PARAMS, "banner_invalid"
+        end
+        c:set(CONFIG, "global", "banner_text", args.banner_text)
+    end
+    if type(args.banner_scope) == "string" then
+        local sc = args.banner_scope
+        if sc ~= "off" and sc ~= "unauth" and sc ~= "authed" and sc ~= "both" then
+            return rpc.ERROR_CODE_INVALID_PARAMS, "banner_scope_invalid"
+        end
+        c:set(CONFIG, "global", "banner_scope", sc)
     end
 
     c:commit(CONFIG)
@@ -356,6 +378,48 @@ function M.emp_status(args)
         signal = res.signal,
         ip = type(res.ipv4) == "table" and res.ipv4.ip or res.ip
     }
+end
+
+-- No-auth device status + banner for the public /wifi page. Reads the stock system status
+-- SERVER-SIDE and returns ONLY the two safe scalars (temperature, battery); the rest of
+-- system.get_status carries WiFi PSKs and is never forwarded. system.mcu is absent on
+-- devices without a battery MCU (e.g. GL-MT1300 Beryl), so has_battery stays false and the
+-- page hides the battery widget. No token required (status/banner are readable pre-login),
+-- but CSRF header still enforced for consistency with the rest of the emp_* surface.
+function M.emp_health(args)
+    if not csrf_ok() then return rpc.ERROR_CODE_ACCESS, "unauthorized" end
+    args = args or {}
+    local out = {}
+
+    local s = rpc.call("system", "get_status", {})
+    if type(s) == "table" and type(s.system) == "table" then
+        local sys = s.system
+        if type(sys.cpu) == "table" and type(sys.cpu.temperature) == "number" then
+            out.cpu_temp = sys.cpu.temperature
+        end
+        if type(sys.mcu) == "table" and type(sys.mcu.charge_percent) == "number" then
+            out.has_battery = true
+            out.battery = sys.mcu.charge_percent
+            out.charging = (sys.mcu.charging_status or 0) ~= 0
+            if type(sys.mcu.temperature) == "number" then out.mcu_temp = sys.mcu.temperature end
+        end
+    end
+
+    -- Banner shown per admin scope (off|unauth|authed|both). "authed" == the caller holds a
+    -- valid employee token (token_valid is also true in no-password mode: no gate to be
+    -- behind). Gated here so a scope=authed banner never reaches an unauthenticated caller.
+    local text = get("banner_text", "")
+    local scope = get("banner_scope", "both")
+    if text ~= "" and scope ~= "off" then
+        local is_authed = token_valid(args.token)
+        if scope == "both"
+            or (scope == "unauth" and not is_authed)
+            or (scope == "authed" and is_authed) then
+            out.banner = text
+        end
+    end
+
+    return out
 end
 
 function M.emp_list(args)

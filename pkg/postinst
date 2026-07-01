@@ -27,16 +27,26 @@ if [ "$(uci -q get empwifi.global.initialized)" != "1" ] \
 	uci commit empwifi
 fi
 
-# 2. Register the employee methods as no-auth (idempotent) so the public /wifi page can
-#    reach them without an admin session. The methods enforce the employee password inside Lua.
-if [ "$(uci -q show oui-httpd | grep -c "\.object='empwifi'")" = "0" ]; then
-	sec="$(uci add oui-httpd no-auth-methods)"
-	uci set oui-httpd."$sec".object='empwifi'
-	for m in emp_login emp_scan emp_join emp_status emp_list; do
-		uci add_list oui-httpd."$sec".method="$m"
-	done
-	uci commit oui-httpd
-fi
+# 2. Register the employee methods as no-auth so the public /wifi page can reach them
+#    without an admin session (the methods enforce the employee password inside Lua).
+#    Drop any existing empwifi section first, then re-add with the current method list: an
+#    older install's section will not list methods added in later versions (e.g. emp_health),
+#    so recreating keeps the no-auth set in sync on every upgrade. Deleting an anonymous
+#    section renumbers the rest, so do NOT advance the index on a delete.
+i=0
+while uci -q get "oui-httpd.@no-auth-methods[$i]" >/dev/null 2>&1; do
+	if [ "$(uci -q get "oui-httpd.@no-auth-methods[$i].object")" = "empwifi" ]; then
+		uci -q delete "oui-httpd.@no-auth-methods[$i]"
+	else
+		i=$((i + 1))
+	fi
+done
+sec="$(uci add oui-httpd no-auth-methods)"
+uci set oui-httpd."$sec".object='empwifi'
+for m in emp_login emp_scan emp_join emp_status emp_list emp_health; do
+	uci add_list oui-httpd."$sec".method="$m"
+done
+uci commit oui-httpd
 
 # 3. Reload nginx so fresh workers pick up the new no-auth methods (the no_auth_methods
 #    dict is a per-worker Lua upvalue) and the /wifi location. Use `nginx -s reload`
