@@ -427,6 +427,11 @@ function M.emp_health(args)
         if type(m.temperature) == "number" then out.mcu_temp = m.temperature end
     end
 
+    -- 1-minute CPU load average (direct /proc read; cheaper than system.get_status).
+    local la = read_file("/proc/loadavg")
+    local one = la and la:match("^%s*([%d%.]+)")
+    if one then out.load = tonumber(one) end
+
     -- Banner shown per admin scope (off|unauth|authed|both). "authed" == the caller holds a
     -- valid employee token (token_valid is also true in no-password mode: no gate to be
     -- behind). Gated here so a scope=authed banner never reaches an unauthenticated caller.
