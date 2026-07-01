@@ -229,12 +229,14 @@
   }
 
   // Device status widget in the header. Battery is shown only when the device reports one
-  // (has_battery); CPU temperature shows on every device. Empty result -> widget stays hidden.
+  // (has_battery). Temperature mirrors the GL admin UI: show the MCU/device sensor when
+  // present, else the CPU/SoC thermal zone (devices without a battery MCU). Both are Celsius.
   function renderHealth(hd) {
     var el = $("health");
-    if (!hd || (hd.cpu_temp == null && !hd.has_battery)) { el.classList.add("hide"); el.innerHTML = ""; return; }
+    if (!hd || (hd.cpu_temp == null && hd.mcu_temp == null && !hd.has_battery)) { el.classList.add("hide"); el.innerHTML = ""; return; }
     var parts = [];
-    if (hd.cpu_temp != null) parts.push("<span>" + thermoSvg() + Math.round(hd.cpu_temp) + "&deg;C</span>");
+    var devTemp = (hd.mcu_temp != null) ? hd.mcu_temp : hd.cpu_temp;
+    if (devTemp != null) parts.push("<span>" + thermoSvg() + Math.round(devTemp) + "&deg;C</span>");
     if (hd.has_battery && hd.battery != null) parts.push("<span>" + batterySvg(hd.battery, !!hd.charging) + Math.round(hd.battery) + "%</span>");
     el.innerHTML = parts.join("");
     el.classList.toggle("hide", parts.length === 0);
