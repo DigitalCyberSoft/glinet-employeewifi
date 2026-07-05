@@ -12,6 +12,13 @@ The employee page (`/wifi`):
   <img src="docs/screenshots/wifi-connect.png" width="32%" alt="Connect" />
 </p>
 
+Live device status (temperature, CPU load, battery and charging) sits in the page header,
+here in dark mode:
+
+<p align="center">
+  <img src="docs/screenshots/wifi-status.png" width="66%" alt="Employee page in dark mode with the device-status widget and a connected network" />
+</p>
+
 The admin page — a native entry in the GL.iNet admin (Applications → Employee WiFi):
 
 <p align="center">
