@@ -1,0 +1,33 @@
+{
+    "empwifi": {
+        "title": "Mitarbeiter-WLAN",
+        "intro": "Lassen Sie Mitarbeiter diesen Router über eine einfache Seite mit einem Gäste-WLAN (Hotel, Konferenz, überall) verbinden, ohne Admin-Passwort oder erweiterte Einstellungen.",
+        "no_password": "Kein Passwort erforderlich",
+        "no_password_desc": "Jedem im Netzwerk dieses Routers erlauben, die Mitarbeiterseite ohne Passwort zu öffnen.",
+        "no_password_warning": "Achtung: Ohne Passwort kann jeder, der mit diesem Router verbunden ist, die Mitarbeiterseite öffnen und das Netzwerk ändern, mit dem sich der Router verbindet. Verwenden Sie dies nur in einem Netzwerk, dem Sie vertrauen.",
+        "generated_label": "Automatisch generiertes Mitarbeiter-Passwort",
+        "generated_hint": "Geben Sie dieses an die Mitarbeiter weiter, damit sie die Mitarbeiter-WLAN-Seite öffnen können. Legen Sie unten ein eigenes Passwort fest, um es zu ersetzen.",
+        "password": "Passwort der Mitarbeiterseite",
+        "password_ph": "Passwort festlegen",
+        "password_keep": "Leer lassen, um das aktuelle Passwort beizubehalten",
+        "password_set_desc": "Ein Passwort ist festgelegt. Geben Sie ein neues ein, um es zu ändern.",
+        "password_unset_desc": "Noch kein Passwort festgelegt. Legen Sie eines fest, damit nur Mitarbeiter die Seite nutzen können.",
+        "camouflage": "Tarnung (MAC-Verschleierung)",
+        "camouflage_desc": "Diesen Router beim Verbinden mit einem Netzwerk hinter einer verschleierten MAC-Adresse verbergen.",
+        "banner": "Mitteilungsbanner",
+        "banner_desc": "Eine kurze Mitteilung oben auf der Mitarbeiterseite anzeigen (bis zu 280 Zeichen).",
+        "banner_ph": "z. B. Willkommen. Wenden Sie sich bei Fragen an die Rezeption.",
+        "banner_scope": "Banner anzeigen für",
+        "banner_scope_desc": "Wählen Sie, wer das Banner auf der Mitarbeiterseite sieht.",
+        "banner_off": "Aus",
+        "banner_both": "Alle",
+        "banner_unauth": "Nur vor der Anmeldung",
+        "banner_authed": "Nur nach der Anmeldung",
+        "loading": "Wird geladen...",
+        "saved": "Gespeichert",
+        "password_too_short": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+        "save_failed": "Speichern fehlgeschlagen",
+        "load_failed": "Einstellungen konnten nicht geladen werden",
+        "err_need_password": "Legen Sie ein Passwort fest oder aktivieren Sie \"Kein Passwort erforderlich\"."
+    }
+}

@@ -1,0 +1,33 @@
+{
+    "empwifi": {
+        "title": "WiFi per i dipendenti",
+        "intro": "Consenti al personale di collegare questo router a una rete WiFi ospiti (hotel, conferenza, ovunque) da una pagina semplice, senza la password di amministratore né impostazioni avanzate.",
+        "no_password": "Nessuna password richiesta",
+        "no_password_desc": "Consenti a chiunque si trovi nella rete di questo router di aprire la pagina dei dipendenti senza password.",
+        "no_password_warning": "Attenzione: senza password, chiunque sia connesso a questo router può aprire la pagina dei dipendenti e cambiare la rete a cui il router si collega. Usalo solo su una rete di cui ti fidi.",
+        "generated_label": "Password dipendente generata automaticamente",
+        "generated_hint": "Consegnala al personale così potrà aprire la pagina WiFi dei dipendenti. Imposta la tua qui sotto per sostituirla.",
+        "password": "Password della pagina dipendenti",
+        "password_ph": "Imposta una password",
+        "password_keep": "Lascia vuoto per mantenere la password attuale",
+        "password_set_desc": "Una password è impostata. Inseriscine una nuova per modificarla.",
+        "password_unset_desc": "Nessuna password ancora impostata. Impostane una affinché solo il personale possa usare la pagina.",
+        "camouflage": "Camuffamento (mascheramento MAC)",
+        "camouflage_desc": "Nascondi questo router dietro un indirizzo MAC mascherato quando si collega a una rete.",
+        "banner": "Banner messaggio",
+        "banner_desc": "Mostra un breve messaggio in cima alla pagina dei dipendenti (fino a 280 caratteri).",
+        "banner_ph": "es. Benvenuto. Chiedi alla reception se hai bisogno di aiuto.",
+        "banner_scope": "Mostra banner a",
+        "banner_scope_desc": "Scegli chi vede il banner nella pagina dei dipendenti.",
+        "banner_off": "Disattivato",
+        "banner_both": "Tutti",
+        "banner_unauth": "Solo prima dell'accesso",
+        "banner_authed": "Solo dopo l'accesso",
+        "loading": "Caricamento...",
+        "saved": "Salvato",
+        "password_too_short": "La password deve contenere almeno 8 caratteri.",
+        "save_failed": "Salvataggio non riuscito",
+        "load_failed": "Impossibile caricare le impostazioni",
+        "err_need_password": "Imposta una password oppure attiva \"Nessuna password richiesta\"."
+    }
+}

@@ -34,10 +34,12 @@ put "$HERE/lib-upgrade-keep.d/$PKG"       lib/upgrade/keep.d/$PKG
 mkdir -p "$DATA/www/views"
 gzip -9 -c "$HERE/src/views/empwifiview.common.js" > "$DATA/www/views/$VIEW.common.js.gz"
 
-# i18n: emit every GL language from the English source so no locale shows raw keys
+# i18n: ship each GL locale's own translation; fall back to English for any missing
 mkdir -p "$DATA/www/i18n"
 for L in en de es it ja zh-cn zh-tw; do
-	cp "$HERE/i18n/en.json" "$DATA/www/i18n/$VIEW.$L.json"
+	SRC="$HERE/i18n/$L.json"
+	[ -f "$SRC" ] || SRC="$HERE/i18n/en.json"
+	cp "$SRC" "$DATA/www/i18n/$VIEW.$L.json"
 done
 
 find "$DATA" -type d -exec chmod 755 {} +

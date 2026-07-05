@@ -1,0 +1,33 @@
+{
+    "empwifi": {
+        "title": "员工WiFi",
+        "intro": "让员工无需管理员密码或高级设置，即可通过一个简单页面将此路由器连接到访客WiFi（酒店、会议、任何地方）。",
+        "no_password": "无需密码",
+        "no_password_desc": "允许此路由器网络中的任何人无需密码即可打开员工页面。",
+        "no_password_warning": "警告：没有密码时，任何连接到此路由器的人都可以打开员工页面并更改路由器所连接的网络。请仅在您信任的网络中使用。",
+        "generated_label": "自动生成的员工密码",
+        "generated_hint": "将其提供给员工，以便他们打开员工WiFi页面。在下方设置您自己的密码以替换它。",
+        "password": "员工页面密码",
+        "password_ph": "设置密码",
+        "password_keep": "留空以保留当前密码",
+        "password_set_desc": "已设置密码。输入新密码即可更改。",
+        "password_unset_desc": "尚未设置密码。请设置一个，以便只有员工才能使用该页面。",
+        "camouflage": "伪装（MAC 伪装）",
+        "camouflage_desc": "连接网络时，将此路由器隐藏在伪装的 MAC 地址后面。",
+        "banner": "消息横幅",
+        "banner_desc": "在员工页面顶部显示一条简短消息（最多 280 个字符）。",
+        "banner_ph": "例如：欢迎。如需帮助请咨询前台。",
+        "banner_scope": "向谁显示横幅",
+        "banner_scope_desc": "选择谁能在员工页面上看到横幅。",
+        "banner_off": "关闭",
+        "banner_both": "所有人",
+        "banner_unauth": "仅登录前",
+        "banner_authed": "仅登录后",
+        "loading": "加载中...",
+        "saved": "已保存",
+        "password_too_short": "密码长度至少为 8 个字符。",
+        "save_failed": "保存失败",
+        "load_failed": "加载设置失败",
+        "err_need_password": "请设置密码，或启用“无需密码”。"
+    }
+}

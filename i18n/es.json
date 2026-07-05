@@ -1,0 +1,33 @@
+{
+    "empwifi": {
+        "title": "WiFi para empleados",
+        "intro": "Permite que el personal conecte este router a una red WiFi de invitados (hotel, conferencia, donde sea) desde una página sencilla, sin la contraseña de administrador ni ajustes avanzados.",
+        "no_password": "No se requiere contraseña",
+        "no_password_desc": "Permitir que cualquier persona en la red de este router abra la página de empleados sin contraseña.",
+        "no_password_warning": "Advertencia: sin contraseña, cualquier persona conectada a este router puede abrir la página de empleados y cambiar la red a la que se conecta el router. Úselo solo en una red de confianza.",
+        "generated_label": "Contraseña de empleado generada automáticamente",
+        "generated_hint": "Entréguela al personal para que pueda abrir la página de WiFi para empleados. Configure la suya a continuación para reemplazarla.",
+        "password": "Contraseña de la página de empleados",
+        "password_ph": "Establecer una contraseña",
+        "password_keep": "Deje en blanco para mantener la contraseña actual",
+        "password_set_desc": "Hay una contraseña establecida. Introduzca una nueva para cambiarla.",
+        "password_unset_desc": "Aún no hay contraseña. Establezca una para que solo el personal pueda usar la página.",
+        "camouflage": "Camuflaje (disfraz de MAC)",
+        "camouflage_desc": "Ocultar este router tras una dirección MAC disfrazada al conectarse a una red.",
+        "banner": "Banner de mensaje",
+        "banner_desc": "Mostrar un mensaje breve en la parte superior de la página de empleados (hasta 280 caracteres).",
+        "banner_ph": "p. ej. Bienvenido. Pregunte en recepción si necesita ayuda.",
+        "banner_scope": "Mostrar banner a",
+        "banner_scope_desc": "Elija quién ve el banner en la página de empleados.",
+        "banner_off": "Desactivado",
+        "banner_both": "Todos",
+        "banner_unauth": "Solo antes de iniciar sesión",
+        "banner_authed": "Solo después de iniciar sesión",
+        "loading": "Cargando...",
+        "saved": "Guardado",
+        "password_too_short": "La contraseña debe tener al menos 8 caracteres.",
+        "save_failed": "Error al guardar",
+        "load_failed": "No se pudieron cargar los ajustes",
+        "err_need_password": "Establezca una contraseña o active \"No se requiere contraseña\"."
+    }
+}

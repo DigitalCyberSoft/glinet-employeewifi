@@ -114,7 +114,7 @@
         <path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.1" fill="#fff" stroke="none"/>
       </svg>
     </span>
-    <h1>Employee WiFi</h1>
+    <h1 data-i18n="title">Employee WiFi</h1>
     <div id="health" class="health hide"></div>
   </div>
 
@@ -126,20 +126,20 @@
 
   <!-- Login -->
   <div id="login" class="card hide">
-    <h2>Enter password</h2>
-    <p class="muted">Ask your administrator for the employee WiFi password.</p>
-    <label for="pw">Password</label>
+    <h2 data-i18n="login_title">Enter password</h2>
+    <p class="muted" data-i18n="login_hint">Ask your administrator for the employee WiFi password.</p>
+    <label for="pw" data-i18n="password">Password</label>
     <input id="pw" type="password" autocomplete="off" />
-    <button class="primary" id="loginBtn">Continue</button>
+    <button class="primary" id="loginBtn" data-i18n="continue">Continue</button>
   </div>
 
   <!-- Networks -->
   <div id="main" class="card hide">
     <div class="row-between">
-      <div><h2 style="margin:0">Available networks</h2><p class="muted" id="statusLine">Choose a network to connect.</p></div>
-      <button class="ghost" id="scanBtn">Rescan</button>
+      <div><h2 style="margin:0" data-i18n="networks_title">Available networks</h2><p class="muted" id="statusLine" data-i18n="choose">Choose a network to connect.</p></div>
+      <button class="ghost" id="scanBtn" data-i18n="rescan">Rescan</button>
     </div>
-    <div id="scanState" class="muted center hide" style="padding:20px 0"><span class="spin"></span> Scanning&hellip;</div>
+    <div id="scanState" class="muted center hide" style="padding:20px 0"><span class="spin"></span> <span data-i18n="scanning">Scanning&hellip;</span></div>
     <ul class="aps" id="aps"></ul>
   </div>
 </div>
@@ -147,15 +147,15 @@
 <!-- Password modal for a chosen network -->
 <div id="modal" class="modal-bg hide">
   <div class="modal">
-    <h2 id="mTitle" style="margin:0 0 4px">Connect</h2>
+    <h2 id="mTitle" style="margin:0 0 4px" data-i18n="connect">Connect</h2>
     <p class="muted" id="mName"></p>
     <div id="mKeyWrap">
-      <label for="mKey">WiFi password</label>
+      <label for="mKey" data-i18n="wifi_password">WiFi password</label>
       <input id="mKey" type="password" autocomplete="off" />
     </div>
     <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="ghost" style="flex:1" id="mCancel">Cancel</button>
-      <button class="primary" style="flex:1;margin-top:0" id="mJoin">Join</button>
+      <button class="ghost" style="flex:1" id="mCancel" data-i18n="cancel">Cancel</button>
+      <button class="primary" style="flex:1;margin-top:0" id="mJoin" data-i18n="join">Join</button>
     </div>
   </div>
 </div>
@@ -165,6 +165,283 @@
   "use strict";
   var token = sessionStorage.getItem("empwifi_token") || "";
   var pending = null; // chosen AP awaiting password
+
+  // i18n: the admin view is translated via GL's i18n JSON; this standalone page carries its
+  // own dictionary. %s markers are filled by fmt(). Static HTML text is tagged data-i18n and
+  // swapped by applyStatic(); the English in the markup is the fallback if this script fails.
+  var I18N = {
+    en: {
+      title: "Employee WiFi",
+      login_title: "Enter password",
+      login_hint: "Ask your administrator for the employee WiFi password.",
+      password: "Password",
+      "continue": "Continue",
+      networks_title: "Available networks",
+      choose: "Choose a network to connect.",
+      rescan: "Rescan",
+      scanning: "Scanning…",
+      connect: "Connect",
+      wifi_password: "WiFi password",
+      cancel: "Cancel",
+      join: "Join",
+      status_connected_to: "Connected to %s",
+      status_connected: "Connected.",
+      connecting_to: "Connecting to %s…",
+      banner_connected: "Connected to %s.",
+      scan_failed: "Scan failed. Tap Rescan to try again.",
+      no_networks: "No networks found.",
+      join_failed: "Could not join %s. Check the password and try again.",
+      session_expired: "Session expired. Please enter the password again.",
+      not_configured_login: "Not set up yet. Ask your administrator to configure Employee WiFi.",
+      locked_out_login: "Too many attempts. Please wait a few minutes and try again.",
+      wrong_password: "Wrong password.",
+      not_configured_probe: "Employee WiFi is not set up yet. Ask your administrator to configure it.",
+      locked_out_probe: "Too many attempts. Please wait and try again.",
+      tip_device_cpu: "Device %s°C, CPU %s°C",
+      tip_device: "Device temperature",
+      tip_cpu: "CPU temperature",
+      tip_load: "load %s / %s cores",
+      tip_load1: "load %s / %s core",
+      tip_charging: "Charging",
+      tip_on_battery: "On battery"
+    },
+    de: {
+      title: "Mitarbeiter-WLAN",
+      login_title: "Passwort eingeben",
+      login_hint: "Fragen Sie Ihren Administrator nach dem Mitarbeiter-WLAN-Passwort.",
+      password: "Passwort",
+      "continue": "Weiter",
+      networks_title: "Verfügbare Netzwerke",
+      choose: "Wählen Sie ein Netzwerk zum Verbinden.",
+      rescan: "Erneut suchen",
+      scanning: "Suche läuft…",
+      connect: "Verbinden",
+      wifi_password: "WLAN-Passwort",
+      cancel: "Abbrechen",
+      join: "Beitreten",
+      status_connected_to: "Verbunden mit %s",
+      status_connected: "Verbunden.",
+      connecting_to: "Verbindung mit %s wird hergestellt…",
+      banner_connected: "Verbunden mit %s.",
+      scan_failed: "Suche fehlgeschlagen. Tippen Sie auf „Erneut suchen“, um es erneut zu versuchen.",
+      no_networks: "Keine Netzwerke gefunden.",
+      join_failed: "Verbindung mit %s nicht möglich. Prüfen Sie das Passwort und versuchen Sie es erneut.",
+      session_expired: "Sitzung abgelaufen. Bitte geben Sie das Passwort erneut ein.",
+      not_configured_login: "Noch nicht eingerichtet. Bitten Sie Ihren Administrator, das Mitarbeiter-WLAN zu konfigurieren.",
+      locked_out_login: "Zu viele Versuche. Bitte warten Sie einige Minuten und versuchen Sie es erneut.",
+      wrong_password: "Falsches Passwort.",
+      not_configured_probe: "Das Mitarbeiter-WLAN ist noch nicht eingerichtet. Bitten Sie Ihren Administrator, es zu konfigurieren.",
+      locked_out_probe: "Zu viele Versuche. Bitte warten Sie und versuchen Sie es erneut.",
+      tip_device_cpu: "Gerät %s°C, CPU %s°C",
+      tip_device: "Gerätetemperatur",
+      tip_cpu: "CPU-Temperatur",
+      tip_load: "Last %s / %s Kerne",
+      tip_load1: "Last %s / %s Kern",
+      tip_charging: "Lädt",
+      tip_on_battery: "Akkubetrieb"
+    },
+    es: {
+      title: "WiFi para empleados",
+      login_title: "Introducir contraseña",
+      login_hint: "Pida a su administrador la contraseña del WiFi para empleados.",
+      password: "Contraseña",
+      "continue": "Continuar",
+      networks_title: "Redes disponibles",
+      choose: "Elija una red para conectarse.",
+      rescan: "Buscar de nuevo",
+      scanning: "Buscando…",
+      connect: "Conectar",
+      wifi_password: "Contraseña WiFi",
+      cancel: "Cancelar",
+      join: "Unirse",
+      status_connected_to: "Conectado a %s",
+      status_connected: "Conectado.",
+      connecting_to: "Conectando a %s…",
+      banner_connected: "Conectado a %s.",
+      scan_failed: "Error al buscar. Pulse «Buscar de nuevo» para reintentar.",
+      no_networks: "No se encontraron redes.",
+      join_failed: "No se pudo conectar a %s. Compruebe la contraseña e inténtelo de nuevo.",
+      session_expired: "Sesión caducada. Vuelva a introducir la contraseña.",
+      not_configured_login: "Aún no está configurado. Pida a su administrador que configure el WiFi para empleados.",
+      locked_out_login: "Demasiados intentos. Espere unos minutos e inténtelo de nuevo.",
+      wrong_password: "Contraseña incorrecta.",
+      not_configured_probe: "El WiFi para empleados aún no está configurado. Pida a su administrador que lo configure.",
+      locked_out_probe: "Demasiados intentos. Espere e inténtelo de nuevo.",
+      tip_device_cpu: "Dispositivo %s°C, CPU %s°C",
+      tip_device: "Temperatura del dispositivo",
+      tip_cpu: "Temperatura de la CPU",
+      tip_load: "carga %s / %s núcleos",
+      tip_load1: "carga %s / %s núcleo",
+      tip_charging: "Cargando",
+      tip_on_battery: "Con batería"
+    },
+    it: {
+      title: "WiFi per i dipendenti",
+      login_title: "Inserisci la password",
+      login_hint: "Chiedi all'amministratore la password del WiFi per i dipendenti.",
+      password: "Password",
+      "continue": "Continua",
+      networks_title: "Reti disponibili",
+      choose: "Scegli una rete a cui connetterti.",
+      rescan: "Cerca di nuovo",
+      scanning: "Ricerca in corso…",
+      connect: "Connetti",
+      wifi_password: "Password WiFi",
+      cancel: "Annulla",
+      join: "Unisciti",
+      status_connected_to: "Connesso a %s",
+      status_connected: "Connesso.",
+      connecting_to: "Connessione a %s in corso…",
+      banner_connected: "Connesso a %s.",
+      scan_failed: "Ricerca non riuscita. Tocca «Cerca di nuovo» per riprovare.",
+      no_networks: "Nessuna rete trovata.",
+      join_failed: "Impossibile connettersi a %s. Controlla la password e riprova.",
+      session_expired: "Sessione scaduta. Inserisci di nuovo la password.",
+      not_configured_login: "Non ancora configurato. Chiedi all'amministratore di configurare il WiFi per i dipendenti.",
+      locked_out_login: "Troppi tentativi. Attendi qualche minuto e riprova.",
+      wrong_password: "Password errata.",
+      not_configured_probe: "Il WiFi per i dipendenti non è ancora configurato. Chiedi all'amministratore di configurarlo.",
+      locked_out_probe: "Troppi tentativi. Attendi e riprova.",
+      tip_device_cpu: "Dispositivo %s°C, CPU %s°C",
+      tip_device: "Temperatura del dispositivo",
+      tip_cpu: "Temperatura della CPU",
+      tip_load: "carico %s / %s core",
+      tip_load1: "carico %s / %s core",
+      tip_charging: "In carica",
+      tip_on_battery: "A batteria"
+    },
+    ja: {
+      title: "従業員用WiFi",
+      login_title: "パスワードを入力",
+      login_hint: "従業員用WiFiのパスワードは管理者にお尋ねください。",
+      password: "パスワード",
+      "continue": "続行",
+      networks_title: "利用可能なネットワーク",
+      choose: "接続するネットワークを選択してください。",
+      rescan: "再スキャン",
+      scanning: "スキャン中…",
+      connect: "接続",
+      wifi_password: "WiFiパスワード",
+      cancel: "キャンセル",
+      join: "参加",
+      status_connected_to: "%s に接続済み",
+      status_connected: "接続済み。",
+      connecting_to: "%s に接続しています…",
+      banner_connected: "%s に接続しました。",
+      scan_failed: "スキャンに失敗しました。「再スキャン」をタップして再試行してください。",
+      no_networks: "ネットワークが見つかりません。",
+      join_failed: "%s に接続できませんでした。パスワードを確認して再試行してください。",
+      session_expired: "セッションの有効期限が切れました。もう一度パスワードを入力してください。",
+      not_configured_login: "まだ設定されていません。管理者に従業員用WiFiの設定を依頼してください。",
+      locked_out_login: "試行回数が多すぎます。数分待ってから再試行してください。",
+      wrong_password: "パスワードが間違っています。",
+      not_configured_probe: "従業員用WiFiはまだ設定されていません。管理者に設定を依頼してください。",
+      locked_out_probe: "試行回数が多すぎます。しばらく待ってから再試行してください。",
+      tip_device_cpu: "デバイス %s°C、CPU %s°C",
+      tip_device: "デバイス温度",
+      tip_cpu: "CPU温度",
+      tip_load: "負荷 %s / %sコア",
+      tip_load1: "負荷 %s / %sコア",
+      tip_charging: "充電中",
+      tip_on_battery: "バッテリー駆動"
+    },
+    "zh-cn": {
+      title: "员工WiFi",
+      login_title: "输入密码",
+      login_hint: "请向管理员索取员工WiFi密码。",
+      password: "密码",
+      "continue": "继续",
+      networks_title: "可用网络",
+      choose: "选择要连接的网络。",
+      rescan: "重新扫描",
+      scanning: "正在扫描…",
+      connect: "连接",
+      wifi_password: "WiFi密码",
+      cancel: "取消",
+      join: "加入",
+      status_connected_to: "已连接到 %s",
+      status_connected: "已连接。",
+      connecting_to: "正在连接到 %s…",
+      banner_connected: "已连接到 %s。",
+      scan_failed: "扫描失败。点按“重新扫描”以重试。",
+      no_networks: "未找到网络。",
+      join_failed: "无法连接到 %s。请检查密码后重试。",
+      session_expired: "会话已过期。请重新输入密码。",
+      not_configured_login: "尚未设置。请让管理员配置员工WiFi。",
+      locked_out_login: "尝试次数过多。请等待几分钟后重试。",
+      wrong_password: "密码错误。",
+      not_configured_probe: "员工WiFi尚未设置。请让管理员进行配置。",
+      locked_out_probe: "尝试次数过多。请稍候后重试。",
+      tip_device_cpu: "设备 %s°C，CPU %s°C",
+      tip_device: "设备温度",
+      tip_cpu: "CPU温度",
+      tip_load: "负载 %s / %s 核",
+      tip_load1: "负载 %s / %s 核",
+      tip_charging: "充电中",
+      tip_on_battery: "使用电池"
+    },
+    "zh-tw": {
+      title: "員工WiFi",
+      login_title: "輸入密碼",
+      login_hint: "請向管理員索取員工WiFi密碼。",
+      password: "密碼",
+      "continue": "繼續",
+      networks_title: "可用網路",
+      choose: "選擇要連接的網路。",
+      rescan: "重新掃描",
+      scanning: "掃描中…",
+      connect: "連接",
+      wifi_password: "WiFi密碼",
+      cancel: "取消",
+      join: "加入",
+      status_connected_to: "已連接到 %s",
+      status_connected: "已連接。",
+      connecting_to: "正在連接到 %s…",
+      banner_connected: "已連接到 %s。",
+      scan_failed: "掃描失敗。請點按「重新掃描」以重試。",
+      no_networks: "找不到網路。",
+      join_failed: "無法連接到 %s。請檢查密碼後重試。",
+      session_expired: "工作階段已過期。請重新輸入密碼。",
+      not_configured_login: "尚未設定。請讓管理員設定員工WiFi。",
+      locked_out_login: "嘗試次數過多。請等待幾分鐘後重試。",
+      wrong_password: "密碼錯誤。",
+      not_configured_probe: "員工WiFi尚未設定。請讓管理員進行設定。",
+      locked_out_probe: "嘗試次數過多。請稍候後重試。",
+      tip_device_cpu: "裝置 %s°C，CPU %s°C",
+      tip_device: "裝置溫度",
+      tip_cpu: "CPU溫度",
+      tip_load: "負載 %s / %s 核",
+      tip_load1: "負載 %s / %s 核",
+      tip_charging: "充電中",
+      tip_on_battery: "使用電池"
+    }
+  };
+  var LANG = (function () {
+    var list = navigator.languages || [navigator.language || "en"];
+    for (var i = 0; i < list.length; i++) {
+      var l = String(list[i] || "").toLowerCase();
+      if (l.indexOf("zh") === 0) return /tw|hk|mo|hant/.test(l) ? "zh-tw" : "zh-cn";
+      var base = l.split("-")[0];
+      if (I18N[base]) return base;
+    }
+    return "en";
+  })();
+  var DICT = I18N[LANG] || I18N.en;
+  function t(key) {
+    var v = DICT[key];
+    return v != null ? v : (I18N.en[key] != null ? I18N.en[key] : key);
+  }
+  function fmt(s) {
+    var a = arguments, i = 1;
+    return String(s).replace(/%s/g, function () { return i < a.length ? a[i++] : "%s"; });
+  }
+  function applyStatic() {
+    document.documentElement.lang = LANG;
+    document.title = t("title");
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++)
+      nodes[i].textContent = t(nodes[i].getAttribute("data-i18n"));
+  }
 
   function $(id) { return document.getElementById(id); }
   function show(id, on) { $(id).classList.toggle("hide", !on); }
@@ -245,17 +522,18 @@
       // Shown value mirrors GL (MCU/device sensor). When both sensors exist, reveal the
       // CPU/SoC die temp on hover (title attribute; desktop only, no touch tooltip).
       var tip = (hd.mcu_temp != null && hd.cpu_temp != null)
-        ? ("Device " + Math.round(hd.mcu_temp) + "°C, CPU " + Math.round(hd.cpu_temp) + "°C")
-        : (hd.mcu_temp != null ? "Device temperature" : "CPU temperature");
+        ? fmt(t("tip_device_cpu"), Math.round(hd.mcu_temp), Math.round(hd.cpu_temp))
+        : (hd.mcu_temp != null ? t("tip_device") : t("tip_cpu"));
       parts.push('<span title="' + tip + '">' + thermoSvg() + Math.round(devTemp) + "&deg;</span>");
     }
     if (hd.load != null) {
       var cores = hd.cores || 1;
-      parts.push('<span title="load ' + hd.load.toFixed(2) + " / " + cores + ' core' + (cores > 1 ? "s" : "") + '">' + cpuSvg() + Math.round(hd.load / cores * 100) + "%</span>");
+      var loadTip = fmt(cores > 1 ? t("tip_load") : t("tip_load1"), hd.load.toFixed(2), cores);
+      parts.push('<span title="' + loadTip + '">' + cpuSvg() + Math.round(hd.load / cores * 100) + "%</span>");
     }
     if (hd.has_battery && hd.battery != null) {
       var chg = !!hd.charging;
-      parts.push('<span class="batt' + (chg ? " chg" : "") + '" title="' + (chg ? "Charging" : "On battery") + '">' + batterySvg(hd.battery, chg) + Math.round(hd.battery) + "%</span>");
+      parts.push('<span class="batt' + (chg ? " chg" : "") + '" title="' + (chg ? t("tip_charging") : t("tip_on_battery")) + '">' + batterySvg(hd.battery, chg) + Math.round(hd.battery) + "%</span>");
     }
     el.innerHTML = parts.join("");
     el.classList.toggle("hide", parts.length === 0);
@@ -302,9 +580,9 @@
   function refreshStatus() {
     rpc("emp_status", { token: token }).then(function (s) {
       if (s && (s.connected || s.ssid)) {
-        $("statusLine").textContent = s.ssid ? ("Connected to " + s.ssid) : "Connected.";
+        $("statusLine").textContent = s.ssid ? fmt(t("status_connected_to"), s.ssid) : t("status_connected");
       } else {
-        $("statusLine").textContent = "Choose a network to connect.";
+        $("statusLine").textContent = t("choose");
       }
     }).catch(function () {});
   }
@@ -318,7 +596,7 @@
     }).catch(function (e) {
       show("scanState", false);
       if (e.code === "unauthorized") return needLogin();
-      banner("err", "Scan failed. Tap Rescan to try again.");
+      banner("err", t("scan_failed"));
     });
   }
 
@@ -340,7 +618,11 @@
       ul.appendChild(li);
     });
     if (!ul.children.length) {
-      ul.innerHTML = '<li class="muted center" style="padding:18px 0;list-style:none">No networks found.</li>';
+      var empty = document.createElement("li");
+      empty.className = "muted center";
+      empty.style.cssText = "padding:18px 0;list-style:none";
+      empty.textContent = t("no_networks");
+      ul.appendChild(empty);
     }
   }
 
@@ -361,12 +643,12 @@
     rpc("emp_join", args).then(function () {
       show("modal", false);
       $("mJoin").disabled = false;
-      banner("ok", "Connecting to " + pending.ssid + "…");
+      banner("ok", fmt(t("connecting_to"), pending.ssid));
       pollStatus(pending.ssid, 0);
     }).catch(function (e) {
       $("mJoin").disabled = false;
       if (e.code === "unauthorized") { show("modal", false); return needLogin(); }
-      banner("err", "Could not join " + pending.ssid + ". Check the password and try again.");
+      banner("err", fmt(t("join_failed"), pending.ssid));
       show("modal", false);
     });
   }
@@ -375,7 +657,7 @@
     if (n > 15) { refreshStatus(); return; }
     rpc("emp_status", { token: token }).then(function (s) {
       if (s && s.connected) {
-        banner("ok", "Connected to " + (s.ssid || ssid) + ".");
+        banner("ok", fmt(t("banner_connected"), s.ssid || ssid));
         refreshStatus();
       } else {
         setTimeout(function () { pollStatus(ssid, n + 1); }, 2000);
@@ -385,7 +667,7 @@
 
   function needLogin() {
     token = ""; sessionStorage.removeItem("empwifi_token");
-    gotoLogin("Session expired. Please enter the password again.");
+    gotoLogin(t("session_expired"));
     health();   // token cleared -> refresh banner scope (now unauthenticated)
   }
 
@@ -395,9 +677,9 @@
     $("loginBtn").disabled = true;
     tryEnter($("pw").value).catch(function (e) {
       $("loginBtn").disabled = false;
-      if (e.code === "not_configured") banner("err", "Not set up yet. Ask your administrator to configure Employee WiFi.");
-      else if (e.code === "locked_out") banner("err", "Too many attempts. Please wait a few minutes and try again.");
-      else banner("err", "Wrong password.");
+      if (e.code === "not_configured") banner("err", t("not_configured_login"));
+      else if (e.code === "locked_out") banner("err", t("locked_out_login"));
+      else banner("err", t("wrong_password"));
     });
   };
   $("pw").addEventListener("keydown", function (e) { if (e.key === "Enter") $("loginBtn").click(); });
@@ -417,11 +699,12 @@
     // emp_login with no password: succeeds when no-password mode is on, else tells us to prompt
     tryEnter(null).catch(function (e) {
       if (e.code === "not_configured") { show("login", false); show("main", false);
-        banner("info", "Employee WiFi is not set up yet. Ask your administrator to configure it."); }
-      else if (e.code === "locked_out") gotoLogin("Too many attempts. Please wait and try again.");
+        banner("info", t("not_configured_probe")); }
+      else if (e.code === "locked_out") gotoLogin(t("locked_out_probe"));
       else gotoLogin();
     });
   }
+  applyStatic();
   health();
   setInterval(health, 25000);   // device temp/battery + banner refresh (system.get_status is the dashboard poll)
   boot();
