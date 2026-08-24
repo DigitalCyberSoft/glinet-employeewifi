@@ -43,7 +43,7 @@ while uci -q get "oui-httpd.@no-auth-methods[$i]" >/dev/null 2>&1; do
 done
 sec="$(uci add oui-httpd no-auth-methods)"
 uci set oui-httpd."$sec".object='empwifi'
-for m in emp_login emp_scan emp_join emp_status emp_list emp_health; do
+for m in emp_login emp_scan emp_join emp_status emp_list emp_health emp_disconnect; do
 	uci add_list oui-httpd."$sec".method="$m"
 done
 uci commit oui-httpd

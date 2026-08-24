@@ -9,5 +9,7 @@ return {
     emp_scan = true,
     emp_join = true,
     emp_status = true,
-    emp_list = true
+    emp_list = true,
+    emp_health = true,
+    emp_disconnect = true
 }

@@ -103,6 +103,26 @@ local function camouflage_supported()
     return c ~= nil and c:find("disguise", 1, true) ~= nil
 end
 
+-- Disconnect (drop the current uplink) is the stock repeater module's `disconnect` method,
+-- the antonym of the `connect` we already delegate to. Detect it the same way as camouflage
+-- so the /wifi page hides the button on any firmware that lacks it, instead of surfacing a
+-- control that would error.
+local function disconnect_supported()
+    local c = read_file("/usr/lib/oui-httpd/rpc/repeater")
+    return c ~= nil and c:find("disconnect", 1, true) ~= nil
+end
+
+-- SSIDs the router already holds a saved profile (with stored key) for, from the repeater's
+-- own UCI `network` sections. Used to (a) flag scan results the page can rejoin without
+-- re-prompting for a password, and (b) sort those first. Returns a set keyed by SSID.
+local function saved_ssids()
+    local set = {}
+    uci.cursor():foreach("repeater", "network", function(s)
+        if s.ssid and s.ssid ~= "" then set[s.ssid] = true end
+    end)
+    return set
+end
+
 -- An auto-generated password is written as PLAINTEXT by postinst (the shell has no
 -- ngx.sha1_bin to hash with). On the first RPC touch, hash it into emp_password/pw_salt so
 -- login verifies normally. The plaintext is kept in emp_password_plain solely so the
@@ -313,6 +333,7 @@ function M.emp_scan(args)
     -- repeater.scan -> { res = { {ssid, bssid, band, channel, signal,
     --   encryption = {enabled, description}}, ... } }. Expose only what the page needs.
     local src = res.res or res.results or res.list or {}
+    local saved = saved_ssids()
     local out = {}
     if type(src) == "table" then
         for _, ap in ipairs(src) do
@@ -325,6 +346,7 @@ function M.emp_scan(args)
                     band = ap.band,
                     signal = ap.signal,
                     secured = secured,
+                    saved = saved[ap.ssid] == true,
                     encryption = type(enc) == "table" and enc.description or ""
                 }
             end
@@ -377,8 +399,22 @@ function M.emp_status(args)
         ssid = res.ssid,
         uptime = res.connected,
         signal = res.signal,
-        ip = type(res.ipv4) == "table" and res.ipv4.ip or res.ip
+        ip = type(res.ipv4) == "table" and res.ipv4.ip or res.ip,
+        -- lets the page show a Disconnect button only where the repeater supports it
+        can_disconnect = disconnect_supported()
     }
+end
+
+function M.emp_disconnect(args)
+    if not authed(args) then return rpc.ERROR_CODE_ACCESS, "unauthorized" end
+    if not disconnect_supported() then
+        return rpc.ERROR_CODE_INVALID_PARAMS, "unsupported"
+    end
+    -- Drop the current uplink. Nothing employee-supplied reaches the repeater here, so there
+    -- is no injection surface; access is gated by the same token/CSRF check as every emp_*.
+    local res = rpc.call("repeater", "disconnect", {})
+    if type(res) == "number" then return res, "disconnect_failed" end
+    return { ok = true }
 end
 
 -- CPU temperature from thermal-zone sysfs (millidegrees C). Prefer a zone whose type names

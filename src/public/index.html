@@ -100,6 +100,15 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .icons { display: flex; align-items: center; gap: 6px; color: var(--text-weak); }
   li.ap .sig { font-size: 12px; color: var(--text-weak); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  li.ap .namewrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  li.ap .namewrap .name { flex: none; }
+  li.ap .substatus { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-hint); }
+  li.ap .substatus svg { display: block; flex: none; }
+  li.ap .substatus.ok { color: var(--success); }
+  li.ap.connected { border-left: 3px solid var(--success); padding-left: 3px; cursor: default; }
+  li.ap.connected:hover { background: transparent; }
+  li.ap.connected .name { font-weight: 600; color: var(--text-title); }
+  button.ghost.danger { color: var(--error); border-color: var(--error); }
   .banner { padding: 11px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
   .banner.ok { background: var(--success-background); color: var(--success); }
   .banner.err { background: var(--error-background); color: var(--error); }
@@ -145,7 +154,10 @@
   <div id="main" class="card hide">
     <div class="row-between">
       <div><h2 style="margin:0" data-i18n="networks_title">Available networks</h2><p class="muted" id="statusLine" data-i18n="choose">Choose a network to connect.</p></div>
-      <button class="ghost" id="scanBtn" data-i18n="rescan">Rescan</button>
+      <div style="display:flex;gap:8px;align-items:center;flex:none">
+        <button class="ghost danger hide" id="disconnectBtn" data-i18n="disconnect">Disconnect</button>
+        <button class="ghost" id="scanBtn" data-i18n="rescan">Rescan</button>
+      </div>
     </div>
     <div id="scanState" class="muted center hide" style="padding:20px 0"><span class="spin"></span> <span data-i18n="scanning">Scanning&hellip;</span></div>
     <ul class="aps" id="aps"></ul>
@@ -173,6 +185,12 @@
   "use strict";
   var token = sessionStorage.getItem("empwifi_token") || "";
   var pending = null; // chosen AP awaiting password
+  var lastAps = [];        // last scan result, re-rendered when connection state changes
+  var connectedSsid = "";  // SSID we're currently connected to (from emp_status)
+  var connectedSignal = null;
+  var connectingSsid = ""; // SSID a join() is in flight for
+  var canDisconnect = false;
+  var scanning = false;
 
   // i18n: the admin view is translated via GL's i18n JSON; this standalone page carries its
   // own dictionary. %s markers are filled by fmt(). Static HTML text is tagged data-i18n and
@@ -196,6 +214,13 @@
       status_connected: "Connected.",
       connecting_to: "Connecting to %s…",
       banner_connected: "Connected to %s.",
+      connected_label: "Connected",
+      connecting_label: "Connecting…",
+      saved_label: "Saved",
+      disconnect: "Disconnect",
+      disconnected: "Disconnected.",
+      disconnect_failed: "Could not disconnect. Try again.",
+      saved_key_failed: "Saved password didn't work — enter it again.",
       scan_failed: "Scan failed. Tap Rescan to try again.",
       no_networks: "No networks found.",
       join_failed: "Could not join %s. Check the password and try again.",
@@ -231,6 +256,13 @@
       status_connected: "Verbunden.",
       connecting_to: "Verbindung mit %s wird hergestellt…",
       banner_connected: "Verbunden mit %s.",
+      connected_label: "Verbunden",
+      connecting_label: "Verbindung wird hergestellt…",
+      saved_label: "Gespeichert",
+      disconnect: "Trennen",
+      disconnected: "Verbindung getrennt.",
+      disconnect_failed: "Trennen fehlgeschlagen. Bitte erneut versuchen.",
+      saved_key_failed: "Gespeichertes Passwort funktioniert nicht — bitte erneut eingeben.",
       scan_failed: "Suche fehlgeschlagen. Tippen Sie auf „Erneut suchen“, um es erneut zu versuchen.",
       no_networks: "Keine Netzwerke gefunden.",
       join_failed: "Verbindung mit %s nicht möglich. Prüfen Sie das Passwort und versuchen Sie es erneut.",
@@ -266,6 +298,13 @@
       status_connected: "Conectado.",
       connecting_to: "Conectando a %s…",
       banner_connected: "Conectado a %s.",
+      connected_label: "Conectado",
+      connecting_label: "Conectando…",
+      saved_label: "Guardada",
+      disconnect: "Desconectar",
+      disconnected: "Desconectado.",
+      disconnect_failed: "No se pudo desconectar. Inténtelo de nuevo.",
+      saved_key_failed: "La contraseña guardada no funcionó: introdúzcala de nuevo.",
       scan_failed: "Error al buscar. Pulse «Buscar de nuevo» para reintentar.",
       no_networks: "No se encontraron redes.",
       join_failed: "No se pudo conectar a %s. Compruebe la contraseña e inténtelo de nuevo.",
@@ -301,6 +340,13 @@
       status_connected: "Connesso.",
       connecting_to: "Connessione a %s in corso…",
       banner_connected: "Connesso a %s.",
+      connected_label: "Connesso",
+      connecting_label: "Connessione in corso…",
+      saved_label: "Salvata",
+      disconnect: "Disconnetti",
+      disconnected: "Disconnesso.",
+      disconnect_failed: "Impossibile disconnettersi. Riprova.",
+      saved_key_failed: "La password salvata non ha funzionato: inseriscila di nuovo.",
       scan_failed: "Ricerca non riuscita. Tocca «Cerca di nuovo» per riprovare.",
       no_networks: "Nessuna rete trovata.",
       join_failed: "Impossibile connettersi a %s. Controlla la password e riprova.",
@@ -336,6 +382,13 @@
       status_connected: "接続済み。",
       connecting_to: "%s に接続しています…",
       banner_connected: "%s に接続しました。",
+      connected_label: "接続済み",
+      connecting_label: "接続中…",
+      saved_label: "保存済み",
+      disconnect: "切断",
+      disconnected: "切断しました。",
+      disconnect_failed: "切断できませんでした。再試行してください。",
+      saved_key_failed: "保存されたパスワードが使えません。もう一度入力してください。",
       scan_failed: "スキャンに失敗しました。「再スキャン」をタップして再試行してください。",
       no_networks: "ネットワークが見つかりません。",
       join_failed: "%s に接続できませんでした。パスワードを確認して再試行してください。",
@@ -371,6 +424,13 @@
       status_connected: "已连接。",
       connecting_to: "正在连接到 %s…",
       banner_connected: "已连接到 %s。",
+      connected_label: "已连接",
+      connecting_label: "正在连接…",
+      saved_label: "已保存",
+      disconnect: "断开连接",
+      disconnected: "已断开连接。",
+      disconnect_failed: "无法断开连接。请重试。",
+      saved_key_failed: "保存的密码无效，请重新输入。",
       scan_failed: "扫描失败。点按“重新扫描”以重试。",
       no_networks: "未找到网络。",
       join_failed: "无法连接到 %s。请检查密码后重试。",
@@ -406,6 +466,13 @@
       status_connected: "已連接。",
       connecting_to: "正在連接到 %s…",
       banner_connected: "已連接到 %s。",
+      connected_label: "已連接",
+      connecting_label: "正在連接…",
+      saved_label: "已儲存",
+      disconnect: "中斷連線",
+      disconnected: "已中斷連線。",
+      disconnect_failed: "無法中斷連線。請重試。",
+      saved_key_failed: "儲存的密碼無效，請重新輸入。",
       scan_failed: "掃描失敗。請點按「重新掃描」以重試。",
       no_networks: "找不到網路。",
       join_failed: "無法連接到 %s。請檢查密碼後重試。",
@@ -506,6 +573,14 @@
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3z"/></svg>';
   }
   function secured(ap) { return !!(ap && ap.secured); }
+  function saved(ap) { return !!(ap && ap.saved); }
+  function checkSvg() {
+    return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  }
+  function keySvg() {
+    // horizontal key: round bow on the left, toothed blade to the right (= "password stored")
+    return '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12.65 10A6 6 0 1 0 7 14a6 6 0 0 0 5.65-4H15v3h2v-3h2v3h2v-5h-8.35zM6 12a2 2 0 1 1 2 2 2 2 0 0 1-2-2z"/></svg>';
+  }
 
   function thermoSvg() {
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V5a2 2 0 0 0-4 0v9.76a4 4 0 1 0 4 0z"/></svg>';
@@ -592,49 +667,94 @@
     });
   }
 
+  function applyStatus(s) {
+    var conn = !!(s && s.connected);
+    connectedSsid = conn && s.ssid ? s.ssid : "";
+    connectedSignal = conn && typeof s.signal === "number" ? s.signal : null;
+    canDisconnect = !!(s && s.can_disconnect);
+    if (connectedSsid && connectedSsid === connectingSsid) connectingSsid = "";
+    if (conn || (s && s.ssid)) {
+      $("statusLine").textContent = s.ssid ? fmt(t("status_connected_to"), s.ssid) : t("status_connected");
+    } else {
+      $("statusLine").textContent = t("choose");
+    }
+    show("disconnectBtn", conn && canDisconnect);
+    renderList();
+  }
+
   function refreshStatus() {
-    rpc("emp_status", { token: token }).then(function (s) {
-      if (s && (s.connected || s.ssid)) {
-        $("statusLine").textContent = s.ssid ? fmt(t("status_connected_to"), s.ssid) : t("status_connected");
-      } else {
-        $("statusLine").textContent = t("choose");
-      }
-    }).catch(function () {});
+    rpc("emp_status", { token: token }).then(applyStatus).catch(function () {});
   }
 
   function scan() {
+    scanning = true;
     show("scanState", true);
     $("aps").innerHTML = "";
     rpc("emp_scan", { token: token }).then(function (res) {
+      scanning = false;
       show("scanState", false);
-      render(res.list || []);
+      lastAps = res.list || [];
+      renderList();
     }).catch(function (e) {
+      scanning = false;
       show("scanState", false);
       if (e.code === "unauthorized") return needLogin();
       banner("err", t("scan_failed"));
     });
   }
 
-  function render(list) {
-    list.sort(function (a, b) { return (b.signal || -999) - (a.signal || -999); });
-    var seen = {}, ul = $("aps");
+  // Ordering: the connected network first, then one being joined, then saved (stored-key)
+  // networks, then the rest by signal. Keeps "what am I on" and one-tap-rejoin networks up top.
+  function apRank(ap) {
+    if (ap.ssid && ap.ssid === connectedSsid) return 0;
+    if (ap.ssid && ap.ssid === connectingSsid) return 1;
+    if (saved(ap)) return 2;
+    return 3;
+  }
+
+  function renderList() {
+    var ul = $("aps");
     ul.innerHTML = "";
-    list.forEach(function (ap) {
+    var seen = {}, items = [];
+    lastAps.forEach(function (ap) {
       if (!ap.ssid || seen[ap.ssid]) return;
       seen[ap.ssid] = 1;
+      items.push(ap);
+    });
+    // Show the connected network even if this scan didn't surface it (hidden SSID, or the
+    // moment right after joining, before the next rescan), so the indicator is never missing.
+    if (connectedSsid && !seen[connectedSsid]) {
+      items.push({ ssid: connectedSsid, signal: connectedSignal, secured: false, synthetic: true });
+      seen[connectedSsid] = 1;
+    }
+    items.sort(function (a, b) {
+      var ra = apRank(a), rb = apRank(b);
+      if (ra !== rb) return ra - rb;
+      return (b.signal || -999) - (a.signal || -999);
+    });
+    items.forEach(function (ap) {
+      var isConn = ap.ssid === connectedSsid;
+      var isConnecting = !isConn && ap.ssid === connectingSsid;
       var li = document.createElement("li");
-      li.className = "ap";
+      li.className = "ap" + (isConn ? " connected" : "") + (isConnecting ? " connecting" : "");
+      var lead = isConnecting ? '<span class="spin"></span>' : wifiSvg(bars(ap.signal));
+      var sub = "";
+      if (isConn) sub = '<span class="substatus ok">' + checkSvg() + '<span class="lbl"></span></span>';
+      else if (isConnecting) sub = '<span class="substatus"><span class="lbl"></span></span>';
+      else if (saved(ap)) sub = '<span class="substatus">' + keySvg() + '<span class="lbl"></span></span>';
       li.innerHTML =
-        '<span class="icons">' + wifiSvg(bars(ap.signal)) + '</span>' +
-        '<span class="name"></span>' +
+        '<span class="icons">' + lead + '</span>' +
+        '<span class="namewrap"><span class="name"></span>' + sub + '</span>' +
         '<span class="sig"></span>' +
         '<span class="icons">' + (secured(ap) ? lockSvg() : "") + "</span>";
       li.querySelector(".name").textContent = ap.ssid;
       li.querySelector(".sig").textContent = signalText(ap.signal);
-      li.onclick = function () { choose(ap); };
+      var lbl = li.querySelector(".substatus .lbl");
+      if (lbl) lbl.textContent = isConn ? t("connected_label") : isConnecting ? t("connecting_label") : t("saved_label");
+      if (!isConn) li.onclick = function () { choose(ap); };
       ul.appendChild(li);
     });
-    if (!ul.children.length) {
+    if (!ul.children.length && !scanning) {
       var empty = document.createElement("li");
       empty.className = "muted center";
       empty.style.cssText = "padding:18px 0;list-style:none";
@@ -643,39 +763,67 @@
     }
   }
 
-  function choose(ap) {
+  function openKeyModal(ap, note) {
     pending = ap;
     $("mName").textContent = ap.ssid;
     $("mKey").value = "";
     show("mKeyWrap", secured(ap));
     show("modal", true);
+    if (note) banner("info", note);
     if (secured(ap)) setTimeout(function () { $("mKey").focus(); }, 50);
   }
 
-  function join() {
-    if (!pending) return;
-    var args = { token: token, ssid: pending.ssid };
-    if (secured(pending)) args.key = $("mKey").value;
+  function choose(ap) {
+    pending = ap;
+    // Password already stored on the router -> reconnect straight away, no prompt.
+    if (saved(ap) && secured(ap)) { doJoin(ap, null); return; }
+    openKeyModal(ap, "");
+  }
+
+  function doJoin(ap, key) {
+    if (!ap) return;
+    var args = { token: token, ssid: ap.ssid };
+    var usingSavedKey = secured(ap) && (key == null || key === "");
+    if (secured(ap) && key != null && key !== "") args.key = key;
     $("mJoin").disabled = true;
     rpc("emp_join", args).then(function () {
       show("modal", false);
       $("mJoin").disabled = false;
-      banner("ok", fmt(t("connecting_to"), pending.ssid));
-      pollStatus(pending.ssid, 0);
+      connectingSsid = ap.ssid;
+      renderList();
+      banner("ok", fmt(t("connecting_to"), ap.ssid));
+      pollStatus(ap.ssid, 0);
     }).catch(function (e) {
       $("mJoin").disabled = false;
       if (e.code === "unauthorized") { show("modal", false); return needLogin(); }
-      banner("err", fmt(t("join_failed"), pending.ssid));
+      // A stored key that no longer works -> fall back to asking for it.
+      if (usingSavedKey) { openKeyModal(ap, t("saved_key_failed")); return; }
+      banner("err", fmt(t("join_failed"), ap.ssid));
       show("modal", false);
     });
   }
 
+  function disconnect() {
+    show("disconnectBtn", false);
+    rpc("emp_disconnect", { token: token }).then(function () {
+      connectedSsid = ""; connectedSignal = null; connectingSsid = "";
+      banner("info", t("disconnected"));
+      renderList();
+      refreshStatus();
+      scan();
+    }).catch(function (e) {
+      if (e.code === "unauthorized") return needLogin();
+      show("disconnectBtn", true);
+      banner("err", t("disconnect_failed"));
+    });
+  }
+
   function pollStatus(ssid, n) {
-    if (n > 15) { refreshStatus(); return; }
+    if (n > 15) { connectingSsid = ""; refreshStatus(); return; }
     rpc("emp_status", { token: token }).then(function (s) {
       if (s && s.connected) {
         banner("ok", fmt(t("banner_connected"), s.ssid || ssid));
-        refreshStatus();
+        applyStatus(s);
       } else {
         setTimeout(function () { pollStatus(ssid, n + 1); }, 2000);
       }
@@ -701,9 +849,10 @@
   };
   $("pw").addEventListener("keydown", function (e) { if (e.key === "Enter") $("loginBtn").click(); });
   $("scanBtn").onclick = scan;
+  $("disconnectBtn").onclick = disconnect;
   $("mCancel").onclick = function () { show("modal", false); };
-  $("mJoin").onclick = join;
-  $("mKey").addEventListener("keydown", function (e) { if (e.key === "Enter") join(); });
+  $("mJoin").onclick = function () { doJoin(pending, $("mKey").value); };
+  $("mKey").addEventListener("keydown", function (e) { if (e.key === "Enter") doJoin(pending, $("mKey").value); });
 
   // boot: if we have a token try it; otherwise probe whether a password is required
   function boot() {
