@@ -417,6 +417,68 @@ function M.emp_disconnect(args)
     return { ok = true }
 end
 
+-- Persist the just-connected network as a saved profile, so the page shows it as "Saved" and
+-- can rejoin it later without re-entering the password. The stock repeater exposes no public
+-- "add network" method (saving is buried inside its compiled `connect`), so we write the
+-- profile ourselves, matching the schema of its own `network` sections.
+--
+-- Two guarantees, both important:
+--  * Save ONLY on a real success. The page calls this after emp_status polls to connected,
+--    and we independently re-check repeater.get_status here -- writing nothing unless the
+--    router actually reports connected to this exact SSID. A wrong-password attempt never
+--    reaches "connected", so it is never saved. (The check also means an authed caller can
+--    only ever persist the one network it is genuinely on -- no saved-list spam.)
+--  * Do NOT disturb the live link. This is purely ADDITIVE: it adds one section and never
+--    touches existing sections, the `selected` flag, `macaddr`, or global repeater settings,
+--    and triggers no reload -- so GL's auto-switcher/MAC-clone state is left exactly as is.
+function M.emp_remember(args)
+    if not authed(args) then return rpc.ERROR_CODE_ACCESS, "unauthorized" end
+    args = args or {}
+    if type(args.ssid) ~= "string" or #args.ssid == 0 or #args.ssid > 32 or not printable(args.ssid) then
+        return rpc.ERROR_CODE_INVALID_PARAMS, "invalid_ssid"
+    end
+    local key = args.key
+    if key ~= nil and (type(key) ~= "string" or #key > 64 or (#key > 0 and not printable(key))) then
+        return rpc.ERROR_CODE_INVALID_PARAMS, "invalid_key"
+    end
+
+    -- Remember only what we are genuinely connected to right now.
+    local st = rpc.call("repeater", "get_status", {})
+    local up = type(st) == "table" and (st.state == 2 or st.state_s == "connected")
+    if not (up and st.ssid == args.ssid) then
+        return { saved = false }
+    end
+
+    local c = uci.cursor()
+    local existing = nil
+    c:foreach("repeater", "network", function(s)
+        if s.ssid == args.ssid then existing = s[".name"]; return false end
+    end)
+
+    if existing then
+        -- already saved: only refresh the key if the caller supplied a (possibly new) one
+        if type(key) == "string" and #key > 0 then
+            c:set("repeater", existing, "key", key)
+            c:commit("repeater")
+        end
+        return { saved = true }
+    end
+
+    local sid = c:add("repeater", "network")
+    if not sid then return rpc.ERROR_CODE_INTERNAL_ERROR, "save_failed" end
+    c:set("repeater", sid, "ssid", args.ssid)
+    if type(key) == "string" and #key > 0 then c:set("repeater", sid, "key", key) end
+    c:set("repeater", sid, "proto", "dhcp")
+    c:set("repeater", sid, "network", "wwan")
+    c:set("repeater", sid, "auto_portal", "0")
+    c:set("repeater", sid, "hostname", "*")
+    -- mirror the connect-time camouflage choice so a later rejoin keeps the same behaviour
+    local disguise = (camouflage_supported() and get("camouflage_default", "1") == "1") and "1" or "0"
+    c:set("repeater", sid, "disguise", disguise)
+    c:commit("repeater")
+    return { saved = true }
+end
+
 -- CPU temperature from thermal-zone sysfs (millidegrees C). Prefer a zone whose type names
 -- "cpu"; else the first present zone. Returns an integer degC, or nil if unreadable.
 local function cpu_temp()

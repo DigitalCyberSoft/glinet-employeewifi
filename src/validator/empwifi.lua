@@ -11,5 +11,6 @@ return {
     emp_status = true,
     emp_list = true,
     emp_health = true,
-    emp_disconnect = true
+    emp_disconnect = true,
+    emp_remember = true
 }

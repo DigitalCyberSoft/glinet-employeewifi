@@ -191,6 +191,7 @@
   var connectingSsid = ""; // SSID a join() is in flight for
   var canDisconnect = false;
   var scanning = false;
+  var lastJoin = null;     // {ssid,key} of the in-flight join, used to persist on success
 
   // i18n: the admin view is translated via GL's i18n JSON; this standalone page carries its
   // own dictionary. %s markers are filled by fmt(). Static HTML text is tagged data-i18n and
@@ -790,6 +791,7 @@
       show("modal", false);
       $("mJoin").disabled = false;
       connectingSsid = ap.ssid;
+      lastJoin = { ssid: ap.ssid, key: (secured(ap) && key != null && key !== "") ? key : null };
       renderList();
       banner("ok", fmt(t("connecting_to"), ap.ssid));
       pollStatus(ap.ssid, 0);
@@ -818,12 +820,30 @@
     });
   }
 
+  // After a confirmed connection, persist the network as a saved profile (so it shows Saved
+  // and one-tap rejoins later). Best-effort: never blocks or errors the UI, and the backend
+  // re-verifies the live connection before writing, so nothing is saved unless the join
+  // genuinely succeeded.
+  function remember(ssid) {
+    if (!ssid) return;
+    var args = { token: token, ssid: ssid };
+    if (lastJoin && lastJoin.ssid === ssid && lastJoin.key) args.key = lastJoin.key;
+    rpc("emp_remember", args).then(function (r) {
+      if (r && r.saved) {
+        var hit = false;
+        lastAps.forEach(function (ap) { if (ap.ssid === ssid) { ap.saved = true; hit = true; } });
+        if (hit) renderList();
+      }
+    }).catch(function () {});
+  }
+
   function pollStatus(ssid, n) {
     if (n > 15) { connectingSsid = ""; refreshStatus(); return; }
     rpc("emp_status", { token: token }).then(function (s) {
       if (s && s.connected) {
         banner("ok", fmt(t("banner_connected"), s.ssid || ssid));
         applyStatus(s);
+        remember(s.ssid || ssid);
       } else {
         setTimeout(function () { pollStatus(ssid, n + 1); }, 2000);
       }
