@@ -28,6 +28,11 @@ The admin page — a native entry in the GL.iNet admin (Applications → Employe
 ## What it does
 
 - Adds a public page at **`/wifi`** for employees: scan → pick → password → connected.
+  Networks show their signal in **dBm**, the connected one is marked and pinned to the top,
+  and a **Disconnect** button drops the uplink.
+- **Remembers networks you join.** A network you've connected to shows a **Saved** badge,
+  sorts to the top, and reconnects in one tap — no re-entering its password. (Saving happens
+  only after the connection actually succeeds, so a wrong password is never stored.)
 - Shows live **device status** on that page: temperature, battery level and charging state,
   and CPU load (each appears only where the hardware reports it).
 - Adds an **Employee WiFi** page in the router admin (Applications) where you set the
@@ -82,7 +87,7 @@ Open **Applications → Employee WiFi**:
 
 - **No build toolchain.** Lua + a little hand-written JS + JSON, packaged with `tar`/`gzip`.
   Rebuild with `./pkg/build.sh` — no npm, no webpack, no cross-compiler.
-- **~13 KB** installed, **no background process**.
+- A **~36 KB** package, **no background process**.
 - **Survives firmware updates**: the package keeps its own files and settings across a
   "keep settings" flash.
 
