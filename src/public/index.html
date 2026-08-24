@@ -26,6 +26,10 @@
     --error-background: var(--gl-red-50, #fcedf2);
     --success: var(--gl-green-600, #00ad9d);
     --success-background: var(--gl-green-50, #e7f9f8);
+    /* Wi-Fi signal arcs: lit = visible, unlit = faint. These flip for dark mode below,
+       so a strong (all-lit) network never renders as near-invisible dark arcs on a dark card. */
+    --sig-on: var(--gl-gray-700, #555557);
+    --sig-off: var(--gl-gray-200, #d2d2d6);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -45,6 +49,9 @@
       --error-background: var(--gl-red-900, #5a1e32);
       --success: var(--gl-green-500, #00c8b5);
       --success-background: var(--gl-green-900, #00645b);
+      /* dark mode: lit arcs are the light gray, unlit the dark gray (swapped from light) */
+      --sig-on: var(--gl-gray-200, #d2d2d6);
+      --sig-off: var(--gl-gray-700, #555557);
     }
   }
   * { box-sizing: border-box; }
@@ -92,6 +99,7 @@
   li.ap .name { flex: 1; font-size: 14px; color: var(--text-regular);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .icons { display: flex; align-items: center; gap: 6px; color: var(--text-weak); }
+  li.ap .sig { font-size: 12px; color: var(--text-weak); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .banner { padding: 11px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
   .banner.ok { background: var(--success-background); color: var(--success); }
   .banner.err { background: var(--error-background); color: var(--error); }
@@ -478,8 +486,15 @@
     var pct = sig <= 0 ? Math.max(0, Math.min(100, 2 * (sig + 100))) : Math.max(0, Math.min(100, sig));
     return Math.round(pct / 25);
   }
+  // Exact signal as a label next to each network: RSSI in dBm when the driver reports it
+  // (<= 0, the GL repeater's native unit), otherwise a percentage. Lets staff compare
+  // strength precisely instead of eyeballing the 0-4 bar glyph.
+  function signalText(sig) {
+    if (sig == null) return "";
+    return sig <= 0 ? sig + " dBm" : sig + "%";
+  }
   function wifiSvg(n) {
-    var on = "var(--gl-gray-700,#555557)", off = "var(--gl-gray-200,#d2d2d6)";
+    var on = "var(--sig-on)", off = "var(--sig-off)";
     function arc(d, lit) { return '<path d="' + d + '" fill="none" stroke="' + (lit ? on : off) + '" stroke-width="2" stroke-linecap="round"/>'; }
     return '<svg width="22" height="22" viewBox="0 0 24 24">' +
       arc("M3 9.5a14 14 0 0 1 18 0", n >= 4) +
@@ -612,8 +627,10 @@
       li.innerHTML =
         '<span class="icons">' + wifiSvg(bars(ap.signal)) + '</span>' +
         '<span class="name"></span>' +
+        '<span class="sig"></span>' +
         '<span class="icons">' + (secured(ap) ? lockSvg() : "") + "</span>";
       li.querySelector(".name").textContent = ap.ssid;
+      li.querySelector(".sig").textContent = signalText(ap.signal);
       li.onclick = function () { choose(ap); };
       ul.appendChild(li);
     });
