@@ -61,7 +61,11 @@ Refresh the list, find `gl-employee-wifi`, and click **install**:
 </p>
 
 That's it. (Same thing from SSH if you prefer:
-`echo 'src/gz empwifi https://digitalcybersoft.github.io/glinet-employeewifi' >> /etc/opkg/customfeeds.conf && opkg update && opkg install gl-employee-wifi`.)
+`echo 'src/gz empwifi https://digitalcybersoft.github.io/glinet-employeewifi' >> /etc/opkg/customfeeds.conf; opkg update --force-signature; opkg install --force-signature gl-employee-wifi`.
+The feed is unsigned and GL firmware ships opkg with signature checking on, so both commands
+need `--force-signature`: a plain `opkg update` deletes this feed's package list and the
+install then finds nothing. The forced update still exits non-zero, which is why the commands
+are joined with `;`, not `&&`.)
 
 > The feed is built and published automatically by `.github/workflows/publish.yml` (GitHub
 > Pages, Source: GitHub Actions). Bump the version in `pkg/control` and push to republish.
